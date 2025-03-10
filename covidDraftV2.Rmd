@@ -1,0 +1,138 @@
+---
+title: "covidDraftV2"
+output: html_document
+date: "2025-03-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse, cols4all)
+```
+
+### Question 1
+
+#### 1.1
+
+**Download the dataset: download Genomes_per_week_in_England.csv from Canvas. This includes weekly counts of virus samples per lineage over time across England collected as part of Sanger Institute COG-UK.**
+
+```{r downloadDataset}
+
+# Import COG-UK daily genomic sequence data
+COGdata <- read.csv("Genomes_per_week_in_England.csv")
+
+# Check the input format and display the first few rows of the data
+head(COGdata)
+```
+
+#### 1.2
+
+**Classify major lineages: identify the following variants as major lineages: B.1.1.7 (Alpha), B.1.617.2 (Delta), BA.1, BA.2, BA.2.75, BA.4, BA.5, BA.5.3 (BQ.1), and XBB. Group all other lineages into a single category labelled as Other.**
+
+```{r setMajorLineages}
+
+# Specify the major lineages
+major_lineages <- c("B.1.1.7", "B.1.617.2", "BA.1", "BA.2", "BA.2.75", "BA.4", "BA.5", "BA.5.3", "XBB")
+
+# Cleaning the data
+COGclean <- COGdata %>%
+  # Ensure collection_date is in Date format
+  mutate(date = as.Date(date)) %>%
+  # Grouping all non-major lineages as 'other' 
+  mutate(lineage = ifelse(lineage %in% major_lineages, lineage, "Other")) %>%
+  # Rename columns for clarity
+  {colnames(.) <- c("collection_date", "major_lineage", "lineage_count"); .}
+
+# Check the format of the columns after cleaning the data and displaying the first few rows of the data
+
+head(COGclean)
+```
+
+#### 1.3
+
+**Visualise the data: generate a stacked area plot showing the total counts of each major lineage over time. Generate another stacked area plot showing the frequencies (proportions) of each major lineage over time.**
+
+```{r frequencyData}
+
+# Calculate total counts per date
+total_COG_counts <- aggregate(COGclean$lineage_count, by = list(collection_date = COGclean$collection_date), FUN = sum)
+colnames(total_COG_counts) <- c("collection_date", "total_count")
+
+# Merge total counts back into the lineage summary
+COGclean <- merge(COGclean, total_COG_counts, by = "collection_date")
+
+# Calculate frequencies
+COGclean$lineage_frequency <- COGclean$lineage_count / COGclean$total_count
+
+# Display the first few rows of the new data frame
+head(COGclean)
+```
+
+```{r 10dayBins}
+# Aggregate lineage frequencies into 10-day bins
+# Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
+COGclean$collection_date_bin <- as.Date(
+  floor(as.numeric(as.Date(COGclean$collection_date)) / 10) * 10, origin = "1970-01-01"
+)
+
+# Aggregate lineage counts for each 10-day bin
+COG_summary_binned <- aggregate(
+  lineage_count ~ collection_date_bin + major_lineage,
+  data = COGclean,
+  FUN = sum
+)
+
+# Calculate total counts within each bin
+total_counts <- aggregate(
+  lineage_count ~ collection_date_bin,
+  data = COG_summary_binned,
+  FUN = sum
+)
+colnames(total_counts) <- c("collection_date_bin", "total_count")  # Rename for clarity
+
+# Merge total counts back into the binned data
+COG_summary_binned <- merge(COG_summary_binned, total_counts, by = "collection_date_bin")
+
+# Recalculate frequencies
+COG_summary_binned$lineage_frequency <- COG_summary_binned$lineage_count / COG_summary_binned$total_count
+
+# Preview the binned data
+head(COG_summary_binned)
+
+```
+
+```{r stackedAreaPlotCounts}
+
+# Set a colour blind friendly colour palette
+palette <- c4a("safe",10)
+
+# Make stacked area plot for total counts of each major lineage
+ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill = major_lineage)) +
+    geom_area(position = "fill") +  # Create a stacked area plot
+    scale_fill_manual(values = palette) +  # Apply the custom palette
+    labs(
+      title = "Total counts of major lineages over time",
+      x = "Collection date",
+      y = "Total count",
+      fill = "Major lineage"
+    ) +
+    theme_minimal()
+
+##this doesn't seem quite right?
+```
+
+```{r stackedAreaPlotFrequencies}
+
+# Make stacked area plot for frequencies of each major lineage
+ggplot(COG_summary_binned, aes(x = collection_date_bin, y = lineage_frequency, fill = major_lineage)) +
+    geom_area(position = "fill") +  # Create a stacked area plot
+    scale_fill_manual(values = palette) +  # Apply the custom palette
+    labs(
+      title = "Frequency of major lineages over time",
+      x = "Collection date",
+      y = "Proportion",
+      fill = "Major lineage"
+    ) +
+    theme_minimal()
+
+
+```
