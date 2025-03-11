@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(cols4all)
 library(here)
+library(gridExtra)
 ```
 
 ### Question 1
@@ -102,13 +103,13 @@ head(COG_summary_binned)
 
 ```
 
-```{r stackedAreaPlotCounts}
+```{r stackedPlots}
 
 # Set a colour blind friendly colour palette
 palette <- c4a("safe",10)
 
 # Make stacked area plot for total counts of each major lineage
-ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill = major_lineage)) +
+countPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill = major_lineage)) +
     geom_area(position = "fill") +  # Create a stacked area plot
     scale_fill_manual(values = palette) +  # Apply the custom palette
     labs(
@@ -120,12 +121,10 @@ ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill = major_lineag
     theme_minimal()
 
 ##this doesn't seem quite right?
-```
 
-```{r stackedAreaPlotFrequencies}
 
 # Make stacked area plot for frequencies of each major lineage
-ggplot(COG_summary_binned, aes(x = collection_date_bin, y = lineage_frequency, fill = major_lineage)) +
+frequencyPlot <- ggplot(COG_summary_binned, aes(x = collection_date_bin, y = lineage_frequency, fill = major_lineage)) +
     geom_area(position = "fill") +  # Create a stacked area plot
     scale_fill_manual(values = palette) +  # Apply the custom palette
     labs(
@@ -136,8 +135,11 @@ ggplot(COG_summary_binned, aes(x = collection_date_bin, y = lineage_frequency, f
     ) +
     theme_minimal()
 
-
+# Printing the two plots
+grid.arrange(countPlot, frequencyPlot, ncol=2, nrow =1)
 ```
+
+
 
 
 ### Question 2
@@ -212,7 +214,7 @@ head(ONS_summary_binned)
 
 ```
 
-```{r BA.2frequencyTrajectory}
+```{r BA.2frequencyTrajectory, fig.height=3}
 
 # Filter COG data for BA.2
 COG_daily_trajectories <- subset(
@@ -226,39 +228,47 @@ ONS_daily_trajectories <-subset(
   major_lineage %in% c("BA.2")
 )
 
-#attempting to sort out the second line
-ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(data = COG_daily_trajectories, linewidth = 1, color = "blue" ) +  # Connect the points with lines
-  geom_line(data = ONS_daily_trajectories, linewidth = 1, color = "red")
-#   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
-#   scale_color_manual(
-#     values = c("BA.2" = "blue"),
-#     labels = c("BA.2 (Alpha)")
-#   ) +
-#   geom_line(data = ONS_daily_trajectories)
-#   labs(
-#     title = "Daily frequency trajectories of BA.2",
-#     x = "Collection date",
-#     y = "Proportion",
-#     color = "Major lineage"
-#   ) +
-#   theme_minimal()
 
-#i know this one works but the lines aren't quite right
-ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency, color = major_lineage, group = major_lineage)) +
-  geom_line(linewidth = 1) +  # Connect the points with lines
+# COG Data BA.2 frequency trajectory plot
+COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
+  geom_line(linewidth = 1, color = "blue") +  # Connect the points with lines
   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
-  scale_color_manual(
-    values = c("BA.2" = "blue"),
-    labels = c("BA.2 (Alpha)")
-  ) +
-  geom_line(data = ONS_daily_trajectories)
   labs(
-    title = "Daily frequency trajectories of BA.2",
+    title = "COG Frequency trajectories of BA.2",
     x = "Collection date",
     y = "Proportion",
-    color = "Major lineage"
   ) +
   theme_minimal()
+
+# ONS data BA.2 frequency trajectory plot
+ONSBA2plot <- ggplot(ONS_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
+  geom_line(linewidth = 1, color = "red") +  # Connect the points with lines
+  geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
+  labs(
+    title = "COG Frequency trajectories of BA.2",
+    x = "Collection date",
+    y = "Proportion",
+  ) +
+  theme_minimal()
+
+# ONS and COG data on the same plot
+BA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
+  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data" )) + 
+  geom_line(data = ONS_daily_trajectories, linewidth = 1, aes(color = "ONS Data")) +
+  scale_color_manual(name = "Dataset", 
+                     values = c("COG Data" = "blue", "ONS Data" = "red")) +
+  labs(
+    title = "Frequency trajectories of BA.2",
+    x = "Collection date",
+    y = "Proportion",
+    color = "Dataset") +
+  theme_minimal() +
+  theme(legend.position = c(0.225, 0.75),
+        legend.background = element_rect(fill = "white", color = "black"))
+  
+
+# Printing the plots 
+grid.arrange(COGBA2plot, ONSBA2plot, BA2ONSCOGplot, ncol=3, nrow =1)
+
 ```
 
