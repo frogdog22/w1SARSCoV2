@@ -139,12 +139,10 @@ frequencyPlot <- ggplot(COG_summary_binned, aes(x = collection_date_bin, y = lin
 grid.arrange(countPlot, frequencyPlot, ncol=2, nrow =1)
 ```
 
-
-
-
 ### Question 2
 
-####2.1
+#### 2.1 
+
 **Visualise the COG-UK and ONS-CIS data for BA.2: plot the frequency trajectory for the BA.2 variant using both the Sanger dataset (weekly counts) and the ONS-CIS dataset (10-day bin counts from the practical).**
 
 ```{r ONSdataSetup}
@@ -266,9 +264,32 @@ BA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y =
   theme(legend.position = c(0.225, 0.75),
         legend.background = element_rect(fill = "white", color = "black"))
   
+ZoomedBA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
+  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data" )) + 
+  geom_line(data = ONS_daily_trajectories, linewidth = 1, aes(color = "ONS Data")) +
+  scale_color_manual(name = "Dataset", 
+                     values = c("COG Data" = "blue", "ONS Data" = "red")) +
+  labs(
+    title = "Frequency trajectories of BA.2",
+    x = "Collection date",
+    y = "Proportion",
+    color = "Dataset") +
+  theme_minimal() +
+  theme(legend.position = c(0.225, 0.75),
+        legend.background = element_rect(fill = "white", color = "black"))+
+  coord_cartesian(xlim = as.Date(c("2022-01-01", "2022-06-30")))
 
 # Printing the plots 
-grid.arrange(COGBA2plot, ONSBA2plot, BA2ONSCOGplot, ncol=3, nrow =1)
+grid.arrange(COGBA2plot, ONSBA2plot, BA2ONSCOGplot, ZoomedBA2ONSCOGplot, ncol=2, nrow =2)
 
 ```
 
+#### 2.2 
+
+**Analysis: compare the two trajectories. Is there a difference in the timing of BA.2’s rise and when it reaches fixation? Reflect on potential reasons for these differences (sampling strategies and geographical or temporal biases in data collection)?**
+
+The two trajectories are almost identical, with BA.2 first appearing at the start of 2022, rising to fixation around 3 months later. The ONS peak for BA.2 is slightly ahead of the COG data peak. One reason for this could be that the ONS data was collected from all individuals, whether symptomatic or not, whilst the COG data was collected from patients. This means that the ONS data would have picked up cases before they became symptomatic, whilst the COG data may have a small delay due to the time taken for cases to become symptomatic.
+
+### Question 3
+
+**Using the Sanger dataset, determine which variant—B.1.617.2, BA.1, or BA.2—reached fixation the fastest and exhibited the highest selective advantage under a logistic growth model. Use weekly counts to measure the selective advantage (𝑠)**
