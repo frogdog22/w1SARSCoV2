@@ -293,3 +293,120 @@ The two trajectories are almost identical, with BA.2 first appearing at the star
 ### Question 3
 
 **Using the Sanger dataset, determine which variant—B.1.617.2, BA.1, or BA.2—reached fixation the fastest and exhibited the highest selective advantage under a logistic growth model. Use weekly counts to measure the selective advantage (𝑠)**
+
+```{r logisticGrowthFunction}
+## logistic growth function
+
+## do i need this defining parameters section? if so need to determine what they should be!!
+# Define parameters
+N <- 1e5          # Population size
+s <- 0.1          # Selection coefficient
+f0 <- 1 / N       # Initial frequency of the variant
+tmax <- 200       # Maximum number of generations
+t <- seq(0, tmax, by = 1) # Time in generations 
+
+# Logistic growth equation
+logistic_growth <- function(t, s, f0) {
+  (f0 * exp(s * t)) / (1 + f0 * (exp(s * t) - 1))
+}
+
+```
+
+
+```{r selectiveAdvantageFunction}
+# Setting up the selectiveAdvantage function
+selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colour) {
+  
+  variant_data <- subset(COG_summary_binned, major_lineage == lineage)
+  
+  dailyFrequencyPlot <- ggplot(variant_data, aes(x = collection_date_bin, 
+                                                 y = lineage_frequency)) +
+    geom_line(color = colour, linewidth = 1) +  # Static color assigned outside aes()
+    geom_point(size = 2, alpha = 0.7, color = colour) +  # Static color for points
+    labs(
+      title = title1,
+      x = "Collection Date",
+      y = "Proportion"
+    ) +
+    theme_minimal()
+  
+  
+  # Subset data to only include the increasing trajectory for Delta
+  variant_growth_phase <- variant_data[
+    variant_data$collection_date_bin >= as.Date(startDate) & variant_data$collection_date_bin <= as.Date(endDate),
+  ]
+  
+  # Fit the logistic model using nls
+  nls_fit <- nls(
+    lineage_frequency ~ logistic_growth(as.numeric(collection_date_bin - min(collection_date_bin)), s, f0),
+    data = variant_growth_phase,
+    start = list(s = 0.1, f0 = min(variant_growth_phase$lineage_frequency))  # Initial guesses
+  )
+  
+  # Extract fitted growth rate
+  growth_rate <- coef(nls_fit)["s"]
+  
+  # Generate a smooth sequence of dates for plotting the logistic curve
+  smooth_dates <- seq(min(variant_growth_phase$collection_date_bin),
+                      max(variant_growth_phase$collection_date_bin), by = "1 day")
+  
+  # Calculate predicted frequencies for smooth (continuous) dates 
+  smooth_predictions <- data.frame(
+    collection_date_bin = smooth_dates,
+    predicted_frequency = logistic_growth(as.numeric(smooth_dates - min(variant_growth_phase$collection_date_bin)),
+                                          coef(nls_fit)["s"], coef(nls_fit)["f0"])
+  )
+  
+  # Visualise the actual data points and the smooth logistic fit
+  logisticFitPlot <- ggplot(variant_growth_phase, aes(x = collection_date_bin)) +
+    geom_point(aes(y = lineage_frequency), color = "black", size = 2, alpha = 0.7) +
+    geom_line(data = smooth_predictions, aes(x = collection_date_bin, y = predicted_frequency),
+              color = colour, size = 1) +
+    annotate(
+      "text", 
+      x = min(variant_growth_phase$collection_date_bin, na.rm = TRUE) + 0.2 * 
+        (max(variant_growth_phase$collection_date_bin, na.rm = TRUE) - 
+         min(variant_growth_phase$collection_date_bin, na.rm = TRUE)), 
+      y = 0.8, 
+      label = paste0("s= ", round(growth_rate, 4)), 
+      color = colour, 
+      size = 5
+    ) +
+    labs(
+      title = title2,
+      x = "Collection date",
+      y = "Frequency"
+    ) +
+    theme_minimal()
+  
+  grid.arrange(dailyFrequencyPlot, logisticFitPlot, ncol=2, nrow =1)
+}
+```
+
+```{r deltaSelectiveAdvantage}
+
+selectiveAdvantage("B.1.617.2", 
+                   "Daily Frequency Trajectories of B.1.617.2", 
+                   "Logistic growth fit for B.1.617.2 variant frequency",
+                   "2021-04-23", 
+                   "2021-07-12",
+                   "#CC6677")
+```
+```{r BA1selectiveAdvantage}
+selectiveAdvantage("BA.1", 
+                   "Daily Frequency Trajectories of BA.1", 
+                   "Logistic growth fit for BA.1 variant frequency",
+                   "2021-11-25", 
+                   "2022-01-10",
+                   "#DDCC77")
+```
+
+```{r BA2selectiveAdvantage}
+selectiveAdvantage("BA.2", 
+                   "Daily Frequency Trajectories of BA.2", 
+                   "Logistic growth fit for BA.2 variant frequency",
+                   "2022-01-01", 
+                   "2022-04-20",
+                   "#117733")
+```
+
