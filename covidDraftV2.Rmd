@@ -141,7 +141,7 @@ grid.arrange(countPlot, frequencyPlot, ncol=2, nrow =1)
 
 ### Question 2
 
-#### 2.1 
+#### 2.1
 
 **Visualise the COG-UK and ONS-CIS data for BA.2: plot the frequency trajectory for the BA.2 variant using both the Sanger dataset (weekly counts) and the ONS-CIS dataset (10-day bin counts from the practical).**
 
@@ -284,7 +284,7 @@ grid.arrange(COGBA2plot, ONSBA2plot, BA2ONSCOGplot, ZoomedBA2ONSCOGplot, ncol=2,
 
 ```
 
-#### 2.2 
+#### 2.2
 
 **Analysis: compare the two trajectories. Is there a difference in the timing of BA.2’s rise and when it reaches fixation? Reflect on potential reasons for these differences (sampling strategies and geographical or temporal biases in data collection)?**
 
@@ -311,7 +311,6 @@ logistic_growth <- function(t, s, f0) {
 }
 
 ```
-
 
 ```{r selectiveAdvantageFunction}
 # Setting up the selectiveAdvantage function
@@ -392,6 +391,7 @@ selectiveAdvantage("B.1.617.2",
                    "2021-07-12",
                    "#CC6677")
 ```
+
 ```{r BA1selectiveAdvantage}
 selectiveAdvantage("BA.1", 
                    "Daily Frequency Trajectories of BA.1", 
@@ -408,5 +408,82 @@ selectiveAdvantage("BA.2",
                    "2022-01-01", 
                    "2022-04-20",
                    "#117733")
+```
+
+### Question 4
+
+#### 4.1
+
+**Load the dataset: download and load delta-d2.rds from Canvas. This dataset contains an anonymised line list of individuals with a sequenced Delta sample from various regions in England, collected as part of the COG-UK. (hint: remove rows for which there is no associated phecname subset(data, phecname != ""))**
+
+```{r loadDeltaDataset}
+
+# Loading in the dataset
+deltaDataRaw <- readRDS(here("data", "delta-d2.rds"))
+
+# Cleaning the data
+deltaDataClean <- deltaDataRaw %>%
+  # Rename columns for clarity
+  rename(
+    collection_date = date,
+    region = phecname,
+    delta = Delta) %>%
+  # Ensure collection_date is in Date format
+  mutate(collection_date = as.Date(collection_date)) %>%
+  # Remove rows with no associated region 
+  filter(region != "") %>%
+  # Remove time column
+  select(-time)
+```
+
+#### 4.2
+**Analyse and visualise the data: (i) plot Delta frequencies by region; for each region, plot the frequency of Delta over time. Use distinct colours or facets to differentiate between regions. (ii) Fit logistic growth for each region; for each region, fit a logistic growth model to the frequency data. Overlay the logistic growth curves onto the frequency trajectories for each region.**
+
+```{r calculatingCountData}
+# Create new data frame 
+deltaSummary <- aggregate(
+  deltaDataClean$delta,
+  by = list(
+    collection_date = deltaDataClean$collection_date,
+    delta = deltaDataClean$delta,
+    region = deltaDataClean$region),
+  FUN = length
+)
+
+# Rename columns for clarity
+colnames(deltaSummary) <- c("collection_date", "delta", "region", "lineage_count")
+
+# Calculate total counts per date
+total_delta_counts <- aggregate(
+  deltaSummary$lineage_count, by = list(
+    collection_date = deltaSummary$collection_date,
+    region = deltaSummary$region), 
+  FUN = sum)
+colnames(total_delta_counts) <- c("collection_date", "region", "total_count")
+
+# Merge total counts back into the lineage summary
+deltaSummary <- merge(deltaSummary, total_delta_counts, by = c("collection_date", "region"))
+
+# Calculate frequencies
+deltaSummary$lineage_frequency <- deltaSummary$lineage_count / deltaSummary$total_count
+
+# Display the first few rows of the new data frame
+head(deltaSummary)
+```
+
+
+
+```{r}
+# Subsetting the data for Delta positive tests
+deltaPositive <- subset(deltaSummary, delta == TRUE)
+
+# Plotting the data per region 
+ggplot(deltaPositive, aes(x = collection_date, y = lineage_frequency)) +
+  geom_line() +
+  facet_wrap(~region) +
+  labs(title = "Delta Frequencies by Region", 
+       x = "Date", 
+       y = "Frequency") +
+  theme_minimal()
 ```
 
