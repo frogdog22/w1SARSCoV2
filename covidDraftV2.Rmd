@@ -72,35 +72,35 @@ head(COGclean)
 ```
 
 ```{r 7dayBins}
-# Aggregate lineage frequencies into 7-day bins
-# Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
-COGclean$collection_date_bin <- as.Date(
-  floor(as.numeric(as.Date(COGclean$collection_date)) / 7) * 7, origin = "1970-01-01"
-)
-
-# Aggregate lineage counts for each 7-day bin
-COG_summary_binned <- aggregate(
-  lineage_count ~ collection_date_bin + major_lineage,
-  data = COGclean,
-  FUN = sum
-)
-
-# Calculate total counts within each bin
-total_COG_counts <- aggregate(
-  lineage_count ~ collection_date_bin,
-  data = COG_summary_binned,
-  FUN = sum
-)
-colnames(total_COG_counts) <- c("collection_date_bin", "total_count")  # Rename for clarity
-
-# Merge total counts back into the binned data
-COG_summary_binned <- merge(COG_summary_binned, total_COG_counts, by = "collection_date_bin")
-
-# Recalculate frequencies
-COG_summary_binned$lineage_frequency <- COG_summary_binned$lineage_count / COG_summary_binned$total_count
-
-# Preview the binned data
-head(COG_summary_binned)
+# # Aggregate lineage frequencies into 7-day bins
+# # Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
+# COGclean$collection_date_bin <- as.Date(
+#   floor(as.numeric(as.Date(COGclean$collection_date)) / 7) * 7, origin = "1970-01-01"
+# )
+# 
+# # Aggregate lineage counts for each 7-day bin
+# COG_summary_binned <- aggregate(
+#   lineage_count ~ collection_date_bin + major_lineage,
+#   data = COGclean,
+#   FUN = sum
+# )
+# 
+# # Calculate total counts within each bin
+# total_COG_counts <- aggregate(
+#   lineage_count ~ collection_date_bin,
+#   data = COG_summary_binned,
+#   FUN = sum
+# )
+# colnames(total_COG_counts) <- c("collection_date_bin", "total_count")  # Rename for clarity
+# 
+# # Merge total counts back into the binned data
+# COG_summary_binned <- merge(COG_summary_binned, total_COG_counts, by = "collection_date_bin")
+# 
+# # Recalculate frequencies
+# COG_summary_binned$lineage_frequency <- COG_summary_binned$lineage_count / COG_summary_binned$total_count
+# 
+# # Preview the binned data
+# head(COG_summary_binned)
 
 ```
 
@@ -124,7 +124,7 @@ countPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill =
 
 
 # Make stacked area plot for frequencies of each major lineage
-frequencyPlot <- ggplot(COG_summary_binned, aes(x = collection_date_bin, y = lineage_frequency, fill = major_lineage)) +
+frequencyPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_frequency, fill = major_lineage)) +
     geom_area(position = "fill") +  # Create a stacked area plot
     scale_fill_manual(values = palette) +  # Apply the custom palette
     labs(
@@ -216,7 +216,7 @@ head(ONS_summary_binned)
 
 # Filter COG data for BA.2
 COG_daily_trajectories <- subset(
-  COG_summary_binned,
+  COGclean,
   major_lineage %in% c("BA.2")
 )
 
@@ -228,7 +228,7 @@ ONS_daily_trajectories <-subset(
 
 
 # COG Data BA.2 frequency trajectory plot
-COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
+COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date, y = lineage_frequency)) +
   geom_line(linewidth = 1, color = "blue") +  # Connect the points with lines
   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
   labs(
@@ -251,7 +251,7 @@ ONSBA2plot <- ggplot(ONS_daily_trajectories, aes(x = collection_date_bin, y = li
 
 # ONS and COG data on the same plot
 BA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data" )) + 
+  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data", x = collection_date )) + 
   geom_line(data = ONS_daily_trajectories, linewidth = 1, aes(color = "ONS Data")) +
   scale_color_manual(name = "Dataset", 
                      values = c("COG Data" = "blue", "ONS Data" = "red")) +
@@ -265,7 +265,7 @@ BA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y =
         legend.background = element_rect(fill = "white", color = "black"))
   
 ZoomedBA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data" )) + 
+  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data" , x = collection_date)) + 
   geom_line(data = ONS_daily_trajectories, linewidth = 1, aes(color = "ONS Data")) +
   scale_color_manual(name = "Dataset", 
                      values = c("COG Data" = "blue", "ONS Data" = "red")) +
@@ -316,9 +316,9 @@ logistic_growth <- function(t, s, f0) {
 # Setting up the selectiveAdvantage function
 selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colour) {
   
-  variant_data <- subset(COG_summary_binned, major_lineage == lineage)
+  variant_data <- subset(COGclean, major_lineage == lineage)
   
-  dailyFrequencyPlot <- ggplot(variant_data, aes(x = collection_date_bin, 
+  dailyFrequencyPlot <- ggplot(variant_data, aes(x = collection_date, 
                                                  y = lineage_frequency)) +
     geom_line(color = colour, linewidth = 1) +  # Static color assigned outside aes()
     geom_point(size = 2, alpha = 0.7, color = colour) +  # Static color for points
@@ -332,12 +332,12 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
   
   # Subset data to only include the increasing trajectory for Delta
   variant_growth_phase <- variant_data[
-    variant_data$collection_date_bin >= as.Date(startDate) & variant_data$collection_date_bin <= as.Date(endDate),
+    variant_data$collection_date >= as.Date(startDate) & variant_data$collection_date <= as.Date(endDate),
   ]
   
   # Fit the logistic model using nls
   nls_fit <- nls(
-    lineage_frequency ~ logistic_growth(as.numeric(collection_date_bin - min(collection_date_bin)), s, f0),
+    lineage_frequency ~ logistic_growth(as.numeric(collection_date - min(collection_date)), s, f0),
     data = variant_growth_phase,
     start = list(s = 0.1, f0 = min(variant_growth_phase$lineage_frequency))  # Initial guesses
   )
@@ -346,26 +346,26 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
   growth_rate <- coef(nls_fit)["s"]
   
   # Generate a smooth sequence of dates for plotting the logistic curve
-  smooth_dates <- seq(min(variant_growth_phase$collection_date_bin),
-                      max(variant_growth_phase$collection_date_bin), by = "1 day")
+  smooth_dates <- seq(min(variant_growth_phase$collection_date),
+                      max(variant_growth_phase$collection_date), by = "1 day")
   
   # Calculate predicted frequencies for smooth (continuous) dates 
   smooth_predictions <- data.frame(
-    collection_date_bin = smooth_dates,
-    predicted_frequency = logistic_growth(as.numeric(smooth_dates - min(variant_growth_phase$collection_date_bin)),
+    collection_date = smooth_dates,
+    predicted_frequency = logistic_growth(as.numeric(smooth_dates - min(variant_growth_phase$collection_date)),
                                           coef(nls_fit)["s"], coef(nls_fit)["f0"])
   )
   
   # Visualise the actual data points and the smooth logistic fit
-  logisticFitPlot <- ggplot(variant_growth_phase, aes(x = collection_date_bin)) +
+  logisticFitPlot <- ggplot(variant_growth_phase, aes(x = collection_date)) +
     geom_point(aes(y = lineage_frequency), color = "black", size = 2, alpha = 0.7) +
-    geom_line(data = smooth_predictions, aes(x = collection_date_bin, y = predicted_frequency),
+    geom_line(data = smooth_predictions, aes(x = collection_date, y = predicted_frequency),
               color = colour, size = 1) +
     annotate(
       "text", 
-      x = min(variant_growth_phase$collection_date_bin, na.rm = TRUE) + 0.2 * 
-        (max(variant_growth_phase$collection_date_bin, na.rm = TRUE) - 
-         min(variant_growth_phase$collection_date_bin, na.rm = TRUE)), 
+      x = min(variant_growth_phase$collection_date, na.rm = TRUE) + 0.2 * 
+        (max(variant_growth_phase$collection_date, na.rm = TRUE) - 
+         min(variant_growth_phase$collection_date, na.rm = TRUE)), 
       y = 0.8, 
       label = paste0("s= ", round(growth_rate, 4)), 
       color = colour, 
