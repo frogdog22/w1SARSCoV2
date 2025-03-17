@@ -503,20 +503,87 @@ deltaSummaryBinned$lineage_frequency <- deltaSummaryBinned$lineage_count / delta
 # Preview the binned data
 head(deltaSummaryBinned)
 ```
-```{r regionFrequencyPlot}
+
+```{r logisticModel}
 # Subsetting the data for Delta positive tests
 deltaPositive <- subset(deltaSummaryBinned, delta == TRUE)
 
-# Plotting the data per region 
+# List of unique regions
+regions <- unique(deltaPositive$region)
+
+# Empty list to store model parameters for Q4.3
+region_parameters <- data.frame(region = character(), f0 = numeric(), s = numeric(), stringsAsFactors = FALSE)
+
+# Empty list to store logistic fit results for each region
+all_smooth_predictions <- list()
+
+# Loop over each region
+for (r in regions) {
+  
+  # Subset data for the current region and the selected date range
+  variant_growth_phase <- subset(deltaPositive, 
+                                 region == r)
+
+  # Fit the logistic model using nls
+  nls_fit <- nls(
+    lineage_frequency ~ logistic_growth(as.numeric(collection_date_bin - min(collection_date_bin)), s, f0),
+    data = variant_growth_phase,
+    start = list(s = 0.1, f0 = min(variant_growth_phase$lineage_frequency))
+  )
+  
+   # Extract parameters
+  growth_rate <- coef(nls_fit)["s"]
+  initial_frequency <- coef(nls_fit)["f0"]
+  
+  # Store the parameters in the dataframe
+  region_parameters <- rbind(region_parameters, 
+                             data.frame(region = r, 
+                                        f0 = initial_frequency,
+                                        s = growth_rate))
+  
+  # Generate smooth predictions for plotting
+  smooth_dates <- seq(startDate, endDate, by = "1 day")
+  smooth_predictions <- data.frame(
+    collection_date_bin = smooth_dates,
+    predicted_frequency = logistic_growth(as.numeric(smooth_dates - min(variant_growth_phase$collection_date_bin)),
+                                          coef(nls_fit)["s"], coef(nls_fit)["f0"]),
+    region = r
+  )
+  
+ 
+  # Store predictions for this region
+  all_smooth_predictions[[r]] <- smooth_predictions
+  
+  
+}
+
+# Combine all regional predictions into one data frame
+all_smooth_predictions <- do.call(rbind, all_smooth_predictions)
+
+# Plot data
 ggplot(deltaPositive, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line() +
+  geom_line(data = all_smooth_predictions, aes(y = predicted_frequency, color = "Logistic Model"), size = 1) +
+  geom_line(aes(color = "Frequencies")) +
   facet_wrap(~region) +
-  labs(title = "Delta Frequencies by Region", 
-       x = "Date", 
+    scale_color_manual(name = "Legend", 
+                       values = c("Frequencies" = "black", "Logistic Model" = "red")) +
+  labs(title = "Delta Frequencies and  by Region", 
+       x = "Collection date", 
        y = "Frequency") +
   theme_minimal()
+
+
+#i have messed this up somewhere trying to add in a part where it extracts s and f0
 ```
 
+#### 4.3
+**Interpretation: (i) Identify the region with the fastest Delta outbreak; based on your analysis, determine which region had the most rapidly growing outbreak of Delta (highest 𝑠). Identify the region where Delta had the earliest rise in frequencies (highest 𝑓0). Discuss why the timing of Delta’s emergence differed between regions. (ii) Could Delta’s growth across regions be associated with a founder effect? Explain what a founder effect is and evaluate whether the observed data supports or refutes this hypothesis.**
 
+```{r}
+ggplot(region_parameters, aes(x = "region", y = "s")) + 
+  geom_bar()
+
+
+```
 
 
