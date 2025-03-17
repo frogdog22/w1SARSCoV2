@@ -70,14 +70,14 @@ COGclean$lineage_frequency <- COGclean$lineage_count / COGclean$total_count
 head(COGclean)
 ```
 
-```{r 10dayBins}
-# Aggregate lineage frequencies into 10-day bins
+```{r 7dayBins}
+# Aggregate lineage frequencies into 7-day bins
 # Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
 COGclean$collection_date_bin <- as.Date(
   floor(as.numeric(as.Date(COGclean$collection_date)) / 7) * 7, origin = "1970-01-01"
 )
 
-# Aggregate lineage counts for each 10-day bin
+# Aggregate lineage counts for each 7-day bin
 COG_summary_binned <- aggregate(
   lineage_count ~ collection_date_bin + major_lineage,
   data = COGclean,
@@ -471,14 +471,44 @@ deltaSummary$lineage_frequency <- deltaSummary$lineage_count / deltaSummary$tota
 head(deltaSummary)
 ```
 
+```{r binnedData}
 
+# Aggregate lineage frequencies into 7-day bins
+# Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
+deltaSummary$collection_date_bin <- as.Date(
+  floor(as.numeric(as.Date(deltaSummary$collection_date)) / 7) * 7, origin = "1970-01-01"
+)
 
-```{r}
+# Aggregate lineage counts for each 7-day bin
+deltaSummaryBinned <- aggregate(
+  lineage_count ~ collection_date_bin + delta + region,
+  data = deltaSummary,
+  FUN = sum
+)
+
+# Calculate total counts within each bin
+totalDeltaBinCounts <- aggregate(
+  lineage_count ~ collection_date_bin + region,
+  data = deltaSummaryBinned,
+  FUN = sum
+)
+colnames(totalDeltaBinCounts) <- c("collection_date_bin", "region", "total_count")  # Rename for clarity
+
+# Merge total counts back into the binned data
+deltaSummaryBinned <- merge(deltaSummaryBinned, totalDeltaBinCounts, by = c("collection_date_bin", "region"))
+
+# Recalculate frequencies
+deltaSummaryBinned$lineage_frequency <- deltaSummaryBinned$lineage_count / deltaSummaryBinned$total_count
+
+# Preview the binned data
+head(deltaSummaryBinned)
+```
+```{r regionFrequencyPlot}
 # Subsetting the data for Delta positive tests
-deltaPositive <- subset(deltaSummary, delta == TRUE)
+deltaPositive <- subset(deltaSummaryBinned, delta == TRUE)
 
 # Plotting the data per region 
-ggplot(deltaPositive, aes(x = collection_date, y = lineage_frequency)) +
+ggplot(deltaPositive, aes(x = collection_date_bin, y = lineage_frequency)) +
   geom_line() +
   facet_wrap(~region) +
   labs(title = "Delta Frequencies by Region", 
@@ -486,4 +516,7 @@ ggplot(deltaPositive, aes(x = collection_date, y = lineage_frequency)) +
        y = "Frequency") +
   theme_minimal()
 ```
+
+
+
 
