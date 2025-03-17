@@ -10,6 +10,7 @@ library(tidyverse)
 library(cols4all)
 library(here)
 library(gridExtra)
+library(scales)
 ```
 
 ### Question 1
@@ -120,7 +121,6 @@ countPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill =
     ) +
     theme_minimal()
 
-##this doesn't seem quite right?
 
 
 # Make stacked area plot for frequencies of each major lineage
@@ -541,8 +541,12 @@ for (r in regions) {
                                         f0 = initial_frequency,
                                         s = growth_rate))
   
-  # Generate smooth predictions for plotting
-  smooth_dates <- seq(startDate, endDate, by = "1 day")
+  # Generate a smooth sequence of dates for plotting the logistic curve
+smooth_dates <- seq(min(variant_growth_phase$collection_date_bin),
+                    max(variant_growth_phase$collection_date_bin), by = "1 day")
+  
+  
+  # Calculate predicted frequencies for smooth (continuous) dates 
   smooth_predictions <- data.frame(
     collection_date_bin = smooth_dates,
     predicted_frequency = logistic_growth(as.numeric(smooth_dates - min(variant_growth_phase$collection_date_bin)),
@@ -580,10 +584,55 @@ ggplot(deltaPositive, aes(x = collection_date_bin, y = lineage_frequency)) +
 **Interpretation: (i) Identify the region with the fastest Delta outbreak; based on your analysis, determine which region had the most rapidly growing outbreak of Delta (highest 𝑠). Identify the region where Delta had the earliest rise in frequencies (highest 𝑓0). Discuss why the timing of Delta’s emergence differed between regions. (ii) Could Delta’s growth across regions be associated with a founder effect? Explain what a founder effect is and evaluate whether the observed data supports or refutes this hypothesis.**
 
 ```{r}
-ggplot(region_parameters, aes(x = "region", y = "s")) + 
-  geom_bar()
 
+# Plotting s per region
+sPlot <- ggplot(region_parameters, aes(x = region, y = s, fill = region)) + 
+  geom_col() +
+  scale_fill_manual(values = palette) +  # Apply the custom palette
+    labs(
+      title = "Growth rate(s) per region",
+      x = "Region",
+      y = "s") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_x_discrete(labels = label_wrap(10))
+
+# Plotting f0 per region
+f0Plot <- ggplot(region_parameters, aes(x = region, y = f0, fill = region)) + 
+  geom_col() +
+  scale_fill_manual(values = palette) +  # Apply the custom palette
+    labs(
+      title = "Growth rate(s) per region",
+      x = "Region",
+      y = "f0") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_x_discrete(labels = label_wrap(10))
+
+# Displaying the plots 
+grid.arrange(sPlot, f0Plot, ncol=2, nrow =1)
 
 ```
 
+
+
+### Question 5
+
+#### 5.1
+
+**Estimate the true incidence of Delta: Up to this point, we have relied on the number of PCR-positive tests sent to the Sanger Institute for sequencing to estimate the growth rate of variants. However, does this approach accurately reflect the true incidence of Delta infections in England? Explain how it is different from the incidence.**
+
+yay lots of brain thoughts !
+
+**To obtain a more representative estimate of the true number of Delta infections, multiply the proportion of Delta sequences in England (from the Sanger dataset) by the daily (7-day averaged) COVID-19 case counts in England provided in the daily-new-confirmed-covid-19-cases.csv dataset on Canvas.**
+
+**Note that while the daily COVID-19 case counts are reported on a daily basis, the proportion of Delta sequences from the Sanger dataset is calculated weekly. For this task, use the same weekly proportion of Delta for every day within each 7-day interval of the daily case counts.**
+
+**Plot estimated daily cases of Delta and weekly number of Delta sequences from Sanger. Reflect on why the two counts are different from each other.**
+
+```{r}
+dailyCases <- read.csv(here("data", "daily-new-confirmed-covid-19-cases.csv"))
+
+
+```
 
