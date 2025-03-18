@@ -2,13 +2,16 @@
 title: "Measuring growth rate and reproduction number for SARS-CoV-2 variants"
 output: 
   html_document:
-    theme: sandstone
+    theme: flatly
+    highlight: tango
 date: "2025-03-10"
+bibliography: references.bib 
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+# The following packages should be installed before running this code for the first time. 
 library(cols4all)
 library(here)
 library(gridExtra)
@@ -17,6 +20,7 @@ library(MCMCpack)
 library(EpiEstim)
 library(incidence)
 library(tidyverse)
+library(kableExtra)
 ```
 
 ### Question 1
@@ -25,13 +29,18 @@ library(tidyverse)
 
 **Download the dataset: download Genomes_per_week_in_England.csv from Canvas. This includes weekly counts of virus samples per lineage over time across England collected as part of Sanger Institute COG-UK.**
 
+This dataset contains three variables across over 1500 columns: the week samples were collected, the lineage they are, and the count. The data was collected from lighthouse labs, set up to process PCR tests in England. Therefore, these data are likely from symptomatic patients.
+
 ```{r downloadDataset}
 
 # Import COG-UK daily genomic sequence data
 COGdata <- read.csv(here("data", "Genomes_per_week_in_England.csv"))
 
 # Check the input format and display the first few rows of the data
-head(COGdata)
+COGdataHead <- head(COGdata)
+COGdataHead %>%
+  kbl() %>%
+  kable_styling(full_width = FALSE, position = "center")
 ```
 
 #### 1.2
@@ -47,13 +56,17 @@ major_lineages <- c("B.1.1.7", "B.1.617.2", "BA.1", "BA.2", "BA.2.75", "BA.4", "
 COGclean <- COGdata %>%
   # Ensure collection_date is in Date format
   mutate(date = as.Date(date)) %>%
-  # Grouping all non-major lineages as 'other' 
+  # Grouping all non-major lineages as 'Other' 
   mutate(lineage = ifelse(lineage %in% major_lineages, lineage, "Other")) %>%
   # Rename columns for clarity
   {colnames(.) <- c("collection_date", "major_lineage", "lineage_count"); .}
 
 # Check the format of the columns after cleaning the data and displaying the first few rows of the data
-head(COGclean)
+COGcleanHead <- head(COGclean)
+# Outputs the table 
+COGcleanHead %>%
+  kbl() %>%
+  kable_styling(full_width = FALSE, position = "center")
 ```
 
 #### 1.3
@@ -73,19 +86,22 @@ COGclean <- merge(COGclean, total_COG_counts, by = "collection_date")
 COGclean$lineage_frequency <- COGclean$lineage_count / COGclean$total_count
 
 # Display the first few rows of the new data frame
-head(COGclean)
+COGcleanHead <- head(COGclean)
+COGcleanHead %>%
+  kbl() %>%
+  kable_styling(full_width = FALSE, position = "center")
 ```
 
 
 
-```{r stackedPlots, fig.height = 7, fig.width = 16, fig.align = "center"}
+```{r stackedPlots, fig.height = 6, fig.width = 14, fig.align = "center"}
 
 # Set a colour blind friendly colour palette
 palette <- c4a("safe",10)
 
 # Make stacked area plot for total counts of each major lineage
 countPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill = major_lineage)) +
-    geom_area(position = "fill") +  # Create a stacked area plot
+    geom_area() +  # Create a stacked area plot
     scale_fill_manual(values = palette) +  # Apply the custom palette
     labs( # Add axis labels and title 
       title = "Total counts of major lineages over time",
@@ -110,6 +126,8 @@ frequencyPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_frequency
 # Printing the two plots
 grid.arrange(countPlot, frequencyPlot, ncol=2, nrow =1)
 ```
+These figures show the total counts of each major lineage and the proportion of each major lineage, using the COG-UK data. Including both of these plots is important as they are each able to show different aspects of the pandemic in more detail. The total counts is able to quantify the number of cases of each lineage at each time point, whilst the frequency plot shows the proportion of the total counts each lineage takes up, and shows the dynamics between the lineages towards the end of 2023 in more detail. In order to make this document accessible, a colour blind friendly colour palette is used throughout. The palette chosen from the cols4all package takes into account how colours would be seen by individuals with  deuteranomia, protanopia and tritanopia [@Tennekes2023].
+
 
 ### Question 2
 
@@ -117,7 +135,11 @@ grid.arrange(countPlot, frequencyPlot, ncol=2, nrow =1)
 
 **Visualise the COG-UK and ONS-CIS data for BA.2: plot the frequency trajectory for the BA.2 variant using both the Sanger dataset (weekly counts) and the ONS-CIS dataset (10-day bin counts from the practical).**
 
-```{r ONSdataSetup}
+The code to import and clean the ONS-CIS data has not been shown here as much of it repeats the methods used in question 1, using code from the practical. It can be seen on the .rmd file. 
+
+```{r ONSdataSetup, echo = FALSE, message = FALSE}
+
+### Import and clean the ONS data ###
 
 # Import ONS-CIS daily genomic sequence data
 ONSdata <- read.csv("https://raw.githubusercontent.com/mg878/variant_fitness_practical/main/lineage_data.csv")
@@ -145,12 +167,12 @@ ONSsummary <- merge(ONSsummary, total_ONS_counts, by = "collection_date")
 # Calculate frequencies
 ONSsummary$lineage_frequency <- ONSsummary$lineage_count / ONSsummary$total_count
 
-# Display the first few rows of the new data frame
-head(ONSsummary)
 ```
 
-```{r ONS10dayBins}
-# Aggregate lineage frequencies into 10-day bins
+```{r ONS10dayBins, echo = FALSE, message = FALSE}
+
+### Aggregate lineage frequencies into 10-day bins ###
+
 # Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
 ONSsummary$collection_date_bin <- as.Date(
   floor(as.numeric(as.Date(ONSsummary$collection_date)) / 10) * 10, origin = "1970-01-01"
@@ -179,12 +201,10 @@ ONS_summary_binned <- merge(ONS_summary_binned, total_ONS_counts, by = "collecti
 # Recalculate frequencies
 ONS_summary_binned$lineage_frequency <- ONS_summary_binned$lineage_count / ONS_summary_binned$total_count
 
-# Preview the binned data
-head(ONS_summary_binned)
 
 ```
 
-```{r BA.2frequencyTrajectory, fig.height=3}
+```{r BA.2frequencyTrajectory, fig.height = 11, fig.width = 11, fig.align='center', echo = FALSE, message = FALSE}
 
 # Filter COG data for BA.2
 COG_daily_trajectories <- subset(
@@ -203,7 +223,7 @@ ONS_daily_trajectories <-subset(
 COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date, y = lineage_frequency)) +
   geom_line(linewidth = 1, color = "blue") +  # Connect the points with lines
   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
-  labs(
+  labs( # Labels the axes and title 
     title = "COG Frequency trajectories of BA.2",
     x = "Collection date",
     y = "Proportion",
@@ -214,8 +234,8 @@ COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date, y = lineag
 ONSBA2plot <- ggplot(ONS_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
   geom_line(linewidth = 1, color = "red") +  # Connect the points with lines
   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
-  labs(
-    title = "COG Frequency trajectories of BA.2",
+  labs( # Labels the axes and title 
+    title = "ONS Frequency trajectories of BA.2",
     x = "Collection date",
     y = "Proportion",
   ) +
@@ -223,35 +243,44 @@ ONSBA2plot <- ggplot(ONS_daily_trajectories, aes(x = collection_date_bin, y = li
 
 # ONS and COG data on the same plot
 BA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data", x = collection_date )) + 
-  geom_line(data = ONS_daily_trajectories, linewidth = 1, aes(color = "ONS Data")) +
-  scale_color_manual(name = "Dataset", 
+  geom_line(data = COG_daily_trajectories, # Adds a line for the COG data
+            linewidth = 1, 
+            aes(color = "COG Data", x = collection_date )) + 
+  geom_line(data = ONS_daily_trajectories, 
+            linewidth = 1, 
+            aes(color = "ONS Data")) + # Adds another line for the ONS data
+  scale_color_manual(name = "Dataset", # Adds a legend  
                      values = c("COG Data" = "blue", "ONS Data" = "red")) +
-  labs(
+  labs( # Labels the legend, x and y axes and title
     title = "Frequency trajectories of BA.2",
     x = "Collection date",
     y = "Proportion",
     color = "Dataset") +
   theme_minimal() +
-  theme(legend.position = c(0.225, 0.75),
-        legend.background = element_rect(fill = "white", color = "black"))
+  theme(legend.position.inside = c(0.225, 0.75), # positions the legend to not interfere with the data
+        legend.background = element_rect(fill = "white", color = "black")) # Adds a background to the legend
   
+# ONS and COG data on the same plot zoomed in
 ZoomedBA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(data = COG_daily_trajectories, linewidth = 1, aes(color = "COG Data" , x = collection_date)) + 
-  geom_line(data = ONS_daily_trajectories, linewidth = 1, aes(color = "ONS Data")) +
-  scale_color_manual(name = "Dataset", 
+  geom_line(data = COG_daily_trajectories, # Adds a line for the COG data
+            linewidth = 1, 
+            aes(color = "COG Data" , x = collection_date)) + 
+  geom_line(data = ONS_daily_trajectories, # Adds another line for the ONS data
+            linewidth = 1, 
+            aes(color = "ONS Data")) +
+  scale_color_manual(name = "Dataset",  # Adds a legend
                      values = c("COG Data" = "blue", "ONS Data" = "red")) +
-  labs(
-    title = "Frequency trajectories of BA.2",
+  labs( # Labels the legend, x and y axes and title
+    title = "Englarged frequency trajectories of BA.2",
     x = "Collection date",
     y = "Proportion",
     color = "Dataset") +
   theme_minimal() +
-  theme(legend.position = c(0.225, 0.75),
-        legend.background = element_rect(fill = "white", color = "black"))+
-  coord_cartesian(xlim = as.Date(c("2022-01-01", "2022-06-30")))
+  theme(legend.position.inside = c(0.225, 0.75), # positions the legend to not interfere with the data
+        legend.background = element_rect(fill = "white", color = "black"))+ # Adds background to the legend
+  coord_cartesian(xlim = as.Date(c("2022-01-01", "2022-06-30"))) # Sets the x axis to certain dates
 
-# Printing the plots 
+# Outputting the plots 
 grid.arrange(COGBA2plot, ONSBA2plot, BA2ONSCOGplot, ZoomedBA2ONSCOGplot, ncol=2, nrow =2)
 
 ```
@@ -266,25 +295,14 @@ The two trajectories are almost identical, with BA.2 first appearing at the star
 
 **Using the Sanger dataset, determine which variant—B.1.617.2, BA.1, or BA.2—reached fixation the fastest and exhibited the highest selective advantage under a logistic growth model. Use weekly counts to measure the selective advantage (𝑠)**
 
-```{r logisticGrowthFunction}
-## logistic growth function
+```{r selectiveAdvantage, message = FALSE}
 
-## do i need this defining parameters section? if so need to determine what they should be!!
-# Define parameters
-N <- 1e5          # Population size
-s <- 0.1          # Selection coefficient
-f0 <- 1 / N       # Initial frequency of the variant
-tmax <- 200       # Maximum number of generations
-t <- seq(0, tmax, by = 1) # Time in generations 
-
-# Logistic growth equation
+# Setting up the logistic growth equation function
 logistic_growth <- function(t, s, f0) {
   (f0 * exp(s * t)) / (1 + f0 * (exp(s * t) - 1))
 }
 
-```
 
-```{r selectiveAdvantageFunction}
 # Setting up the selectiveAdvantage function
 selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colour) {
   
@@ -335,7 +353,7 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
               color = colour, size = 1) +
     annotate(
       "text", 
-      x = min(variant_growth_phase$collection_date, na.rm = TRUE) + 0.2 * 
+      x = min(variant_growth_phase$collection_date, na.rm = TRUE) + 0.2 * # Sets the location of the text to be 20% of the way across the plot
         (max(variant_growth_phase$collection_date, na.rm = TRUE) - 
          min(variant_growth_phase$collection_date, na.rm = TRUE)), 
       y = 0.8, 
@@ -343,7 +361,7 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
       color = colour, 
       size = 5
     ) +
-    labs(
+    labs( # Labels the axes and title 
       title = title2,
       x = "Collection date",
       y = "Frequency"
@@ -354,32 +372,37 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
 }
 ```
 
-```{r deltaSelectiveAdvantage}
+```{r deltaSelectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 9, fig.align='center'}
 
-selectiveAdvantage("B.1.617.2", 
-                   "Daily Frequency Trajectories of B.1.617.2", 
-                   "Logistic growth fit for B.1.617.2 variant frequency",
-                   "2021-04-23", 
-                   "2021-07-12",
-                   "#CC6677")
+# Running the selectiveAdvantage function for the B.1.617.2 variant 
+selectiveAdvantage(lineage = "B.1.617.2", 
+                   title1 = "Daily Frequency Trajectories of B.1.617.2", 
+                   title2 = "Logistic growth fit for B.1.617.2 variant frequency",
+                   startDate = "2021-04-23", 
+                   endDate = "2021-07-12",
+                   colour = "#CC6677")  # Colours match those used for variants in Q1
 ```
 
-```{r BA1selectiveAdvantage}
+```{r BA1selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 9, fig.align='center'}
+
+# Running the selectiveAdvantage function for the BA.1 variant 
 selectiveAdvantage("BA.1", 
                    "Daily Frequency Trajectories of BA.1", 
                    "Logistic growth fit for BA.1 variant frequency",
                    "2021-11-25", 
                    "2022-01-10",
-                   "#DDCC77")
+                   "#DDCC77") # Colours match those used for variants in Q1
 ```
 
-```{r BA2selectiveAdvantage}
+```{r BA2selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 9, fig.align='center'}
+
+# Running the selectiveAdvantage function for the BA.2 variant 
 selectiveAdvantage("BA.2", 
                    "Daily Frequency Trajectories of BA.2", 
                    "Logistic growth fit for BA.2 variant frequency",
                    "2022-01-01", 
                    "2022-04-20",
-                   "#117733")
+                   "#117733") # Colours match those used for variants in Q1
 ```
 
 ### Question 4
@@ -404,9 +427,15 @@ deltaDataClean <- deltaDataRaw %>%
   mutate(collection_date = as.Date(collection_date)) %>%
   # Remove rows with no associated region 
   filter(region != "") %>%
+  # Remove the time column. dplyr::select is needed due to the conflict with select() in other packages
   dplyr::select(-time)
-  # # Remove time column
-  # select(-time)
+
+
+# Outputs the first 6 rows of the dataset to check structure  
+deltaDataCleanHead <- head(deltaDataClean)
+deltaDataCleanHead %>%
+  kbl() %>%
+  kable_styling(full_width = FALSE, position = "center")
 ```
 
 #### 4.2
@@ -626,7 +655,7 @@ dailyIncidence <- COGclean %>%
   # Filtering the dataset to only include Delta
   filter(major_lineage == "B.1.617.2") %>% 
   # Removing unneeded columns
-  select(-c(major_lineage, total_count)) %>% 
+  dplyr::select(-c(major_lineage, total_count)) %>% 
   # Renaming column for consistency with the dailyCases dataset
   rename(weeklyDate = collection_date) %>% 
   # Merging this dataset with dailyCases
@@ -753,3 +782,5 @@ rtONSPlot <- plot(rt_results_ONS, what = "R", legend = FALSE) +
 grid.arrange(rtONSPlot, rtSangerPlot, ncol=2, nrow =1)
 ```
 
+
+### References
