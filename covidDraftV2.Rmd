@@ -8,11 +8,15 @@ date: "2025-03-10"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
+
 library(cols4all)
 library(here)
 library(gridExtra)
 library(scales)
+library(MCMCpack)
+library(EpiEstim)
+library(incidence)
+library(tidyverse)
 ```
 
 ### Question 1
@@ -49,7 +53,6 @@ COGclean <- COGdata %>%
   {colnames(.) <- c("collection_date", "major_lineage", "lineage_count"); .}
 
 # Check the format of the columns after cleaning the data and displaying the first few rows of the data
-
 head(COGclean)
 ```
 
@@ -75,7 +78,7 @@ head(COGclean)
 
 
 
-```{r stackedPlots}
+```{r stackedPlots, fig.height = 7, fig.width = 16, fig.align = "center"}
 
 # Set a colour blind friendly colour palette
 palette <- c4a("safe",10)
@@ -84,7 +87,7 @@ palette <- c4a("safe",10)
 countPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill = major_lineage)) +
     geom_area(position = "fill") +  # Create a stacked area plot
     scale_fill_manual(values = palette) +  # Apply the custom palette
-    labs(
+    labs( # Add axis labels and title 
       title = "Total counts of major lineages over time",
       x = "Collection date",
       y = "Total count",
@@ -92,13 +95,11 @@ countPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_count, fill =
     ) +
     theme_minimal()
 
-
-
 # Make stacked area plot for frequencies of each major lineage
 frequencyPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_frequency, fill = major_lineage)) +
     geom_area(position = "fill") +  # Create a stacked area plot
     scale_fill_manual(values = palette) +  # Apply the custom palette
-    labs(
+    labs( # Add axis labels and title 
       title = "Frequency of major lineages over time",
       x = "Collection date",
       y = "Proportion",
@@ -403,8 +404,9 @@ deltaDataClean <- deltaDataRaw %>%
   mutate(collection_date = as.Date(collection_date)) %>%
   # Remove rows with no associated region 
   filter(region != "") %>%
-  # Remove time column
-  select(-time)
+  dplyr::select(-time)
+  # # Remove time column
+  # select(-time)
 ```
 
 #### 4.2
@@ -654,8 +656,6 @@ ggplot(dailyIncidence, aes(x = weeklyDate)) +
   theme(legend.position = c(0.1, 0.9), # Adjusts the position of the legend 
         legend.justification = c(0.2, 0.7))
 
-
-
 ```
 
 #### 5.2
@@ -665,4 +665,91 @@ ggplot(dailyIncidence, aes(x = weeklyDate)) +
 **Compare your 𝑅𝑡 estimate to the one calculated during the practical using the ONS-CIS dataset.**
 
 **Reflect on whether the two estimates differ significantly. Which estimate do you consider more reliable, and why? (hint: consider factors such as the sampling strategy used by the different datasets and the representativeness of the sequencing data for actual infections.)**
+
+```{r Rt}
+
+### Calculating Rt for the Sanger data
+
+# Specify start and end dates
+start_date <- as.Date("2021-04-23")
+end_date <- as.Date("2021-11-01")
+
+# Filter delta_daily_counts for the specified date range
+filtered_delta_sanger <- subset(
+  dailyIncidence,
+  date >= start_date & date <= end_date
+)
+
+# Prepare data for estimate_R
+sanger_incidence_data <- data.frame(
+  dates = filtered_delta_sanger$date,
+  I = filtered_delta_sanger$deltaIncidence  # Use lineage_count as daily incidence
+)
+
+# Define serial interval parameters
+serial_interval <- list(mean_si = 4.1, std_si = 2.8)
+
+# Estimate R_t
+rt_results_sanger <- estimate_R(
+  incid = sanger_incidence_data,
+  method = "parametric_si",
+  config = make_config(serial_interval)
+)
+
+
+### Calculating Rt for the ONS dataset - as done in the practical 
+
+# Specify start and end dates
+# The input incidence data for EpiEstim cannot include missing dates and case counts 
+start_date <- as.Date("2021-06-01")
+end_date <- as.Date("2021-11-01")
+
+# Filter daily counts for Delta variant directly from lineage_summary
+ONS_delta_daily_counts <- subset(
+  ONSsummary,
+  major_lineage == "B.1.617.2"  # *Filter for Delta variant*
+)
+
+# Filter delta_daily_counts for the specified date range
+filtered_delta_ONS <- subset(
+  ONS_delta_daily_counts,
+  collection_date >= start_date & collection_date <= end_date
+)
+
+# Prepare data for estimate_R
+incidence_data <- data.frame(
+  dates = filtered_delta_ONS$collection_date,
+  I = filtered_delta_ONS$lineage_count  # Use lineage_count as daily incidence
+)
+
+# Estimate R_t
+rt_results_ONS <- estimate_R(
+  incid = incidence_data,
+  method = "parametric_si",
+  config = make_config(serial_interval)
+)
+
+### Plotting the Rt estimates
+
+# Create the Sanger data Rt plot 
+rtSangerPlot <- plot(rt_results_sanger, what = "R", legend = FALSE) +
+    plot(rt_results_ONS, what = "R", legend = FALSE)$layers[[1]] +
+  labs(
+    title = expression("Sanger Time-varying reproduction number" ~ (R[t]) ~ "for Delta"),
+    x = "Date",
+    y = expression("Reproduction number" ~ (R[t]))
+  )
+
+# Create the ONS data Rt plot
+rtONSPlot <- plot(rt_results_ONS, what = "R", legend = FALSE) +
+    plot(rt_results_ONS, what = "R", legend = FALSE)$layers[[1]] +
+  labs(
+    title = expression("ONS Time-varying reproduction number" ~ (R[t]) ~ "for Delta"),
+    x = "Date",
+    y = expression("Reproduction number" ~ (R[t]))
+  )
+
+# Display both plots 
+grid.arrange(rtONSPlot, rtSangerPlot, ncol=2, nrow =1)
+```
 
