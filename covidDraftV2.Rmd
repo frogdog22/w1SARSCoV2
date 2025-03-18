@@ -289,7 +289,9 @@ grid.arrange(COGBA2plot, ONSBA2plot, BA2ONSCOGplot, ZoomedBA2ONSCOGplot, ncol=2,
 
 **Analysis: compare the two trajectories. Is there a difference in the timing of BA.2’s rise and when it reaches fixation? Reflect on potential reasons for these differences (sampling strategies and geographical or temporal biases in data collection)?**
 
-The two trajectories are almost identical, with BA.2 first appearing at the start of 2022, rising to fixation around 3 months later. The ONS peak for BA.2 is slightly ahead of the COG data peak. One reason for this could be that the ONS data was collected from all individuals, whether symptomatic or not, whilst the COG data was collected from patients. This means that the ONS data would have picked up cases before they became symptomatic, whilst the COG data may have a small delay due to the time taken for cases to become symptomatic.
+The two trajectories are almost identical, with BA.2 first appearing at the start of 2022, rising to fixation around 3 months later. The ONS peak for BA.2 is slightly ahead of the COG data peak. One reason for this could be that the ONS data was collected from individuals in the community, whether symptomatic or not, whilst the COG data was collected from patients. This means that the ONS data would have picked up cases before they became symptomatic, whilst the COG data may have a small delay due to the time taken for cases to become symptomatic.
+
+Another reason for the small difference in timing could be due to geographical biases. The COG-UK data consists of pillar 2 samples, collected from lighthouse labs across the UK, located in key strategic sites. The data excludes pillar 1 samples, from other locations, which were sequenced by local universities or NHS trusts instead of the Wellcome Sanger Institute [@nicholls2021climb]. Meanwhile, the ONS-CIS dataset was collected throughout the UK [@steel2022coronavirus]. If BA.2 first spread in particular areas which were not located close to hte lighthouse lab locations it could result in it being picked up on the ONS-CIS data before the COG-UK data.
 
 ### Question 3
 
@@ -372,18 +374,18 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
 }
 ```
 
-```{r deltaSelectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 9, fig.align='center'}
+```{r deltaSelectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center'}
 
 # Running the selectiveAdvantage function for the B.1.617.2 variant 
 selectiveAdvantage(lineage = "B.1.617.2", 
                    title1 = "Daily Frequency Trajectories of B.1.617.2", 
                    title2 = "Logistic growth fit for B.1.617.2 variant frequency",
-                   startDate = "2021-04-23", 
+                   startDate = "2021-04-01", 
                    endDate = "2021-07-12",
                    colour = "#CC6677")  # Colours match those used for variants in Q1
 ```
 
-```{r BA1selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 9, fig.align='center'}
+```{r BA1selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center'}
 
 # Running the selectiveAdvantage function for the BA.1 variant 
 selectiveAdvantage("BA.1", 
@@ -394,7 +396,7 @@ selectiveAdvantage("BA.1",
                    "#DDCC77") # Colours match those used for variants in Q1
 ```
 
-```{r BA2selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 4, fig.width = 9, fig.align='center'}
+```{r BA2selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center'}
 
 # Running the selectiveAdvantage function for the BA.2 variant 
 selectiveAdvantage("BA.2", 
@@ -404,6 +406,8 @@ selectiveAdvantage("BA.2",
                    "2022-04-20",
                    "#117733") # Colours match those used for variants in Q1
 ```
+From these data, BA.1 has the highest growth rate of s = 0.2598, followed by B.1.617.2 with s = 0.1267, and then BA.2 with s = 0.1038. However, as these variants did not all compete against each other simultaneously, this cannot be used alone as a measure to compare their fitness. The envrionment at the time must also be taken into account, with the potential of cross immunity between variants, measures such as social distancing, and the introduction of vaccination also affecting the growth rate of the variants over time. 
+
 
 ### Question 4
 
@@ -430,13 +434,14 @@ deltaDataClean <- deltaDataRaw %>%
   # Remove the time column. dplyr::select is needed due to the conflict with select() in other packages
   dplyr::select(-time)
 
-
 # Outputs the first 6 rows of the dataset to check structure  
 deltaDataCleanHead <- head(deltaDataClean)
 deltaDataCleanHead %>%
   kbl() %>%
   kable_styling(full_width = FALSE, position = "center")
 ```
+
+This dataset consists of over 229,000 rows. Each one has a collection date, which is daily, not weekly as with the previous COG-UK data set, whether the sample is or isn't a Delta variant, and the region it was collected in. England has been split into 9 regions for this: East Midlands, East of England, London, North East, North West, South East, South West, West Midlands and Yorkshire and Humber. 
 
 #### 4.2
 **Analyse and visualise the data: (i) plot Delta frequencies by region; for each region, plot the frequency of Delta over time. Use distinct colours or facets to differentiate between regions. (ii) Fit logistic growth for each region; for each region, fit a logistic growth model to the frequency data. Overlay the logistic growth curves onto the frequency trajectories for each region.**
