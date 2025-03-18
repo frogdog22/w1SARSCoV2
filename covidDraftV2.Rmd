@@ -1,6 +1,8 @@
 ---
-title: "covidDraftV2"
-output: html_document
+title: "Measuring growth rate and reproduction number for SARS-CoV-2 variants"
+output: 
+  html_document:
+    theme: sandstone
 date: "2025-03-10"
 ---
 
@@ -71,38 +73,7 @@ COGclean$lineage_frequency <- COGclean$lineage_count / COGclean$total_count
 head(COGclean)
 ```
 
-```{r 7dayBins}
-# # Aggregate lineage frequencies into 7-day bins
-# # Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
-# COGclean$collection_date_bin <- as.Date(
-#   floor(as.numeric(as.Date(COGclean$collection_date)) / 7) * 7, origin = "1970-01-01"
-# )
-# 
-# # Aggregate lineage counts for each 7-day bin
-# COG_summary_binned <- aggregate(
-#   lineage_count ~ collection_date_bin + major_lineage,
-#   data = COGclean,
-#   FUN = sum
-# )
-# 
-# # Calculate total counts within each bin
-# total_COG_counts <- aggregate(
-#   lineage_count ~ collection_date_bin,
-#   data = COG_summary_binned,
-#   FUN = sum
-# )
-# colnames(total_COG_counts) <- c("collection_date_bin", "total_count")  # Rename for clarity
-# 
-# # Merge total counts back into the binned data
-# COG_summary_binned <- merge(COG_summary_binned, total_COG_counts, by = "collection_date_bin")
-# 
-# # Recalculate frequencies
-# COG_summary_binned$lineage_frequency <- COG_summary_binned$lineage_count / COG_summary_binned$total_count
-# 
-# # Preview the binned data
-# head(COG_summary_binned)
 
-```
 
 ```{r stackedPlots}
 
@@ -630,9 +601,68 @@ yay lots of brain thoughts !
 
 **Plot estimated daily cases of Delta and weekly number of Delta sequences from Sanger. Reflect on why the two counts are different from each other.**
 
-```{r}
+```{r calculateAndPlotIncidence}
+library(tidyverse)
+
+# Loading in the data
 dailyCases <- read.csv(here("data", "daily-new-confirmed-covid-19-cases.csv"))
+
+# Cleaning dailyCases so it can be merged with COGclean
+dailyCases <- dailyCases %>%
+  # filter out dates outside of the range of the COG dataset
+  filter(date >= as.Date("2020-09-05") & date <= as.Date("2023-02-11")) %>% 
+  # Rename columns for clarity 
+  rename(cases = cases_sevendayaveraged) %>% 
+  # Aggregate lineage frequencies into 7-day bins
+  mutate(
+    date = as.Date(date),
+    weeklyDate = as.Date(floor((as.numeric(date) - as.numeric(as.Date("2020-09-05"))) / 7) * 7 + as.numeric(as.Date("2020-09-05")), 
+    origin = "1970-01-01"))
+ 
+# Filtering COGclean, merging it with dailyCases and calculate deltaIncidence
+dailyIncidence <- COGclean %>% 
+  # Filtering the dataset to only include Delta
+  filter(major_lineage == "B.1.617.2") %>% 
+  # Removing unneeded columns
+  select(-c(major_lineage, total_count)) %>% 
+  # Renaming column for consistency with the dailyCases dataset
+  rename(weeklyDate = collection_date) %>% 
+  # Merging this dataset with dailyCases
+  left_join(dailyCases, by = "weeklyDate") %>% 
+  # Calculating daily incidence of Delta 
+  mutate(deltaIncidence = lineage_frequency * cases)
+
+# Plotting estimated daily cases, and weekly number of delta sequences 
+ggplot(dailyIncidence, aes(x = weeklyDate)) +
+  geom_line(aes(y = lineage_count, # Plots weekly no. delta seqeunces
+                color = "Sanger Sequences")) + 
+  geom_line(aes(x = date, # Plots estimated daily delta cases
+                y = deltaIncidence, 
+                color = "Estimated Daily Cases")) +
+  scale_x_date(limits = c(as.Date("2021-04-01"), as.Date("2022-04-01"))) +
+  scale_color_manual( # Adds the legend 
+    name = "Legend", 
+    values = c(
+      "Sanger Sequences" = "blue",
+      "Estimated Daily Cases" = "red")) +
+  labs( # Labels the axes and title
+    title = "Lineage Count and Delta Incidence Over Time",
+    x = "Date",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(legend.position = c(0.1, 0.9), # Adjusts the position of the legend 
+        legend.justification = c(0.2, 0.7))
+
 
 
 ```
+
+#### 5.2
+
+**Measure 𝑅𝑡: Using the estimated daily Delta case counts, calculate the time-varying reproduction number (𝑅𝑡) using the same method as in the practical (hint: use this time range: “2021-04-23” to “2021-11-01” for measurement).**
+
+**Compare your 𝑅𝑡 estimate to the one calculated during the practical using the ONS-CIS dataset.**
+
+**Reflect on whether the two estimates differ significantly. Which estimate do you consider more reliable, and why? (hint: consider factors such as the sampling strategy used by the different datasets and the representativeness of the sequencing data for actual infections.)**
 
