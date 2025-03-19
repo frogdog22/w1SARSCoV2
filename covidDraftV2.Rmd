@@ -92,8 +92,6 @@ COGcleanHead %>%
   kable_styling(full_width = FALSE, position = "center")
 ```
 
-
-
 ```{r stackedPlots, fig.height = 6, fig.width = 14, fig.align = "center", fig.cap = "Counts and frequencies of the major SARS-CoV-2 lineages over time"}
 
 # Set a colour blind friendly colour palette
@@ -126,8 +124,8 @@ frequencyPlot <- ggplot(COGclean, aes(x = collection_date, y = lineage_frequency
 # Printing the two plots
 grid.arrange(countPlot, frequencyPlot, ncol=2, nrow =1)
 ```
-These figures show the total counts of each major lineage and the proportion of each major lineage, using the COG-UK data. Including both of these plots is important as they are each able to show different aspects of the pandemic in more detail. The total counts is able to quantify the number of cases of each lineage at each time point, whilst the frequency plot shows the proportion of the total counts each lineage takes up, and shows the dynamics between the lineages towards the end of 2023 in more detail. In order to make this document accessible, a colour blind friendly colour palette is used throughout. The palette chosen from the cols4all package takes into account how colours would be seen by individuals with  deuteranomia, protanopia and tritanopia [@Tennekes2023].
 
+These figures show the total counts of each major lineage and the proportion of each major lineage, using the COG-UK data. Including both of these plots is important as they are each able to show different aspects of the pandemic in more detail. The total counts is able to quantify the number of cases of each lineage at each time point, whilst the frequency plot shows the proportion of the total counts each lineage takes up, and shows the dynamics between the lineages towards the end of 2023 in more detail. In order to make this document accessible, a colour blind friendly colour palette is used throughout. The palette chosen from the cols4all package takes into account how colours would be seen by individuals with deuteranomia, protanopia and tritanopia [@Tennekes2023].
 
 ### Question 2
 
@@ -135,7 +133,7 @@ These figures show the total counts of each major lineage and the proportion of 
 
 **Visualise the COG-UK and ONS-CIS data for BA.2: plot the frequency trajectory for the BA.2 variant using both the Sanger dataset (weekly counts) and the ONS-CIS dataset (10-day bin counts from the practical).**
 
-The code to import and clean the ONS-CIS data has not been shown here as much of it repeats the methods used in question 1, using code from the practical. It can be seen on the .rmd file. 
+The code to import and clean the ONS-CIS data has not been shown here as much of it repeats the methods used in question 1, using code from the practical. It can be seen on the .rmd file.
 
 ```{r ONSdataSetup, echo = FALSE, message = FALSE}
 
@@ -204,7 +202,7 @@ ONS_summary_binned$lineage_frequency <- ONS_summary_binned$lineage_count / ONS_s
 
 ```
 
-```{r BA.2frequencyTrajectory, fig.height = 11, fig.width = 11, fig.align='center', echo = FALSE, message = FALSE}
+```{r BA.2frequencyTrajectory, fig.height = 11, fig.width = 11, fig.align='center', echo = FALSE, message = FALSE, fig.cap = "Daily trajectories of BA.2 for the ONS-CIS and COG-UK datasets"}
 
 # Filter COG data for BA.2
 COG_daily_trajectories <- subset(
@@ -221,7 +219,7 @@ ONS_daily_trajectories <-subset(
 
 # COG Data BA.2 frequency trajectory plot
 COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date, y = lineage_frequency)) +
-  geom_line(linewidth = 1, color = "blue") +  # Connect the points with lines
+  geom_line(linewidth = 1, color = "#6699CC") +  # Connect the points with lines
   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
   labs( # Labels the axes and title 
     title = "COG Frequency trajectories of BA.2",
@@ -232,7 +230,7 @@ COGBA2plot <- ggplot(COG_daily_trajectories, aes(x = collection_date, y = lineag
 
 # ONS data BA.2 frequency trajectory plot
 ONSBA2plot <- ggplot(ONS_daily_trajectories, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(linewidth = 1, color = "red") +  # Connect the points with lines
+  geom_line(linewidth = 1, color = "#661100") +  # Connect the points with lines
   geom_point(size = 2, alpha = 0.7) +  # Add points for daily frequencies
   labs( # Labels the axes and title 
     title = "ONS Frequency trajectories of BA.2",
@@ -250,7 +248,7 @@ BA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bin, y =
             linewidth = 1, 
             aes(color = "ONS Data")) + # Adds another line for the ONS data
   scale_color_manual(name = "Dataset", # Adds a legend  
-                     values = c("COG Data" = "blue", "ONS Data" = "red")) +
+                     values = c("COG Data" = "#6699CC", "ONS Data" =  "#661100")) +
   labs( # Labels the legend, x and y axes and title
     title = "Frequency trajectories of BA.2",
     x = "Collection date",
@@ -269,7 +267,7 @@ ZoomedBA2ONSCOGplot <- ggplot(COG_daily_trajectories, aes(x = collection_date_bi
             linewidth = 1, 
             aes(color = "ONS Data")) +
   scale_color_manual(name = "Dataset",  # Adds a legend
-                     values = c("COG Data" = "blue", "ONS Data" = "red")) +
+                     values = c("COG Data" = "#6699CC", "ONS Data" =  "#661100")) +
   labs( # Labels the legend, x and y axes and title
     title = "Englarged frequency trajectories of BA.2",
     x = "Collection date",
@@ -374,7 +372,7 @@ selectiveAdvantage <- function(lineage, title1, title2, startDate, endDate, colo
 }
 ```
 
-```{r deltaSelectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center'}
+```{r deltaSelectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center', fig.cap = "The logistic growth fit for the B.1.617.2 variant over time"}
 
 # Running the selectiveAdvantage function for the B.1.617.2 variant 
 selectiveAdvantage(lineage = "B.1.617.2", 
@@ -385,7 +383,7 @@ selectiveAdvantage(lineage = "B.1.617.2",
                    colour = "#CC6677")  # Colours match those used for variants in Q1
 ```
 
-```{r BA1selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center'}
+```{r BA1selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center', fig.cap = "The logistic growth fit for the BA.1 variant over time"}
 
 # Running the selectiveAdvantage function for the BA.1 variant 
 selectiveAdvantage("BA.1", 
@@ -396,7 +394,7 @@ selectiveAdvantage("BA.1",
                    "#DDCC77") # Colours match those used for variants in Q1
 ```
 
-```{r BA2selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center'}
+```{r BA2selectiveAdvantage, echo = FALSE, message = FALSE, fig.height = 5, fig.width = 10, fig.align='center', fig.cap = "The logistic growth fit for the BA.2 variant over time"}
 
 # Running the selectiveAdvantage function for the BA.2 variant 
 selectiveAdvantage("BA.2", 
@@ -406,8 +404,8 @@ selectiveAdvantage("BA.2",
                    "2022-04-20",
                    "#117733") # Colours match those used for variants in Q1
 ```
-From these data, BA.1 has the highest growth rate of s = 0.2598, followed by B.1.617.2 with s = 0.1267, and then BA.2 with s = 0.1038. However, as these variants did not all compete against each other simultaneously, this cannot be used alone as a measure to compare their fitness. The envrionment at the time must also be taken into account, with the potential of cross immunity between variants, measures such as social distancing, and the introduction of vaccination also affecting the growth rate of the variants over time. 
 
+From these data, BA.1 has the highest growth rate of s = 0.2598, followed by B.1.617.2 with s = 0.1267, and then BA.2 with s = 0.1038. However, as these variants did not all compete against each other simultaneously, this cannot be used alone as a measure to compare their fitness. The envrionment at the time must also be taken into account, with the potential of cross immunity between variants, measures such as social distancing, and the introduction of vaccination also affecting the growth rate of the variants over time.
 
 ### Question 4
 
@@ -441,9 +439,10 @@ deltaDataCleanHead %>%
   kable_styling(full_width = FALSE, position = "center")
 ```
 
-This dataset consists of over 229,000 rows. Each one has a collection date, which is daily, not weekly as with the previous COG-UK data set, whether the sample is or isn't a Delta variant, and the region it was collected in. England has been split into 9 regions for this: East Midlands, East of England, London, North East, North West, South East, South West, West Midlands and Yorkshire and Humber. 
+This dataset consists of over 229,000 rows. Each one has a collection date, which is daily, not weekly as with the previous COG-UK data set, whether the sample is or isn't a Delta variant, and the region it was collected in. England has been split into 9 regions for this: East Midlands, East of England, London, North East, North West, South East, South West, West Midlands and Yorkshire and Humber.
 
 #### 4.2
+
 **Analyse and visualise the data: (i) plot Delta frequencies by region; for each region, plot the frequency of Delta over time. Use distinct colours or facets to differentiate between regions. (ii) Fit logistic growth for each region; for each region, fit a logistic growth model to the frequency data. Overlay the logistic growth curves onto the frequency trajectories for each region.**
 
 The code for calculating the counts and sorting the data into 7 day bins has been excluded from the html file as the same methods are used as in Q1. The full code can be seen on the rmd file.
@@ -508,7 +507,7 @@ deltaSummaryBinned$lineage_frequency <- deltaSummaryBinned$lineage_count / delta
 
 ```
 
-```{r logisticModel, fig.align = "center"}
+```{r logisticModel, fig.align = "center", fig.cap = "The frequencies and logisitic model fit of the SARS-CoV-2 Delta variant over time"}
 # Subsetting the data for Delta positive tests
 deltaPositive <- subset(deltaSummaryBinned, delta == TRUE)
 
@@ -574,19 +573,20 @@ ggplot(deltaPositive, aes(x = collection_date_bin, y = lineage_frequency)) +
   geom_line(aes(color = "Frequencies")) + # Adds a line for the frequencies 
   facet_wrap(~region) + # Splits the graph into facets by region
   scale_color_manual(name = "Legend", # Sets up the colours for the legend 
-                     values = c("Frequencies" = "black", "Logistic Model" = "red")) +
-  labs(title = "Delta Frequencies and  by Region", # Labels the title and axes
+                     values = c("Frequencies" = "black", "Logistic Model" = "#CC6677")) +
+  labs(title = "Delta Frequencies and logistic model fit by Region", # Labels the title and axes
        x = "Collection date", 
        y = "Frequency") +
   theme_minimal()
 ```
+
 These plots show the frequencies of Delta in each region, shown in black, as well as the logistic growth curves, overlaid in red. As the start and end dates of when Delta first emerged and when it reached fixation were very similar for each region, the same dates were used for all. These plots show that for the most part, the logistic growth model fits the frequency data. In some regions, it appears to be a less good fit, for example in the South West and North East, where growth was not fully logarithmic. Therefore, the results and parameters from the model should be treated with caution for these regions.
 
-
 #### 4.3
+
 **Interpretation: (i) Identify the region with the fastest Delta outbreak; based on your analysis, determine which region had the most rapidly growing outbreak of Delta (highest 𝑠). Identify the region where Delta had the earliest rise in frequencies (highest 𝑓0). Discuss why the timing of Delta’s emergence differed between regions. (ii) Could Delta’s growth across regions be associated with a founder effect? Explain what a founder effect is and evaluate whether the observed data supports or refutes this hypothesis.**
 
-```{r parameterPlots, fig.width = 11, fig.height = 5, fig.align='center'}
+```{r parameterPlots, fig.width = 11, fig.height = 5, fig.align='center', fig.cap = "The parameters s and f0 of the logisitc growth model for the SARS-CoV-2 Delta variant in differnet regions of England"}
 
 # Plotting s per region
 sPlot <- ggplot(region_parameters, aes(x = region, y = s, fill = region)) + 
@@ -617,18 +617,17 @@ grid.arrange(sPlot, f0Plot, ncol=2, nrow =1)
 
 ```
 
-s is the selection coefficient, the odds of a variant appearing in a random sample in a large population over time will increase at a rate of s per generation. This can be used to represent the growth rate of a variant. From these data, s is greatest in the West Midlands, at 0.155. Meanwhile, regions with the highest f0 have the earliest rise in frequencies. From these data, this occurs in the South West, where f0 is 0.040. Whilst these data are useful in understanding the dynamics of the Delta variant, a logistic growth model may not be right for this data. It assumes a constant population size and fixed generation time, which may vary based on public health measures such as lockdowns and social distancing, alongside a constant selective advantage, which also cannot be assumed due to immunity building in the host population. Despite this, logistic growth models are robust to changes in the rate of reporting and any sampling lags [@volz2023fitness], which is important to consider especially early in the pandemic when recording systems were still being set up, but it doesn't give all of the information needed to determine if a variant is a public health threat. Other models, such as Bayesian heirarhcial models or generalised multinomal logistic regression models may be appropriate instead. 
+s is the selection coefficient, the odds of a variant appearing in a random sample in a large population over time will increase at a rate of s per generation. This can be used to represent the growth rate of a variant. From these data, s is greatest in the West Midlands, at 0.155. Meanwhile, regions with the highest f0 have the earliest rise in frequencies. From these data, this occurs in the South West, where f0 is 0.040. Whilst these data are useful in understanding the dynamics of the Delta variant, a logistic growth model may not be right for this data. It assumes a constant population size and fixed generation time, which may vary based on public health measures such as lockdowns and social distancing, alongside a constant selective advantage, which also cannot be assumed due to immunity building in the host population. Despite this, logistic growth models are robust to changes in the rate of reporting and any sampling lags [@volz2023fitness], which is important to consider especially early in the pandemic when recording systems were still being set up, but it doesn't give all of the information needed to determine if a variant is a public health threat. Other models, such as Bayesian heirarhcial models or generalised multinomal logistic regression models may be appropriate instead.
 
-Founder effects are the reduction in genetic diversity due to the colonisation of a region by a small, subset of a few viral variants from a larger population [@volz2023fitness]. This can often mask the effects of natural selection when looking at a logistic growth model. The extent to which a founder effect occurs depends on the size of the founder population that infects a new region, and the rate of exponential growth in that new region. As the delta variant was introduced to England over 1000 times [@mccrone2022context], the founder effect is likely reduced, although the impact this has on regions depends on if these introductions were evenly spread throughout England, or were concentrated in one area. The large range in f0 between regions could imply a founder effect. To fully ascertain this, more data on the genetic sequences and their similarity of the delta variant in different regions would be needed. 
-### Question 5
+Founder effects are the reduction in genetic diversity due to the colonisation of a region by a small, subset of a few viral variants from a larger population [@volz2023fitness]. This can often mask the effects of natural selection when looking at a logistic growth model. The extent to which a founder effect occurs depends on the size of the founder population that infects a new region, and the rate of exponential growth in that new region. As the delta variant was introduced to England over 1000 times [@mccrone2022context], the founder effect is likely reduced, although the impact this has on regions depends on if these introductions were evenly spread throughout England, or were concentrated in one area. The large range in f0 between regions could imply a founder effect. To fully ascertain this, more data on the genetic sequences and their similarity of the delta variant in different regions would be needed. \### Question 5
 
 #### 5.1
 
 **Estimate the true incidence of Delta: Up to this point, we have relied on the number of PCR-positive tests sent to the Sanger Institute for sequencing to estimate the growth rate of variants. However, does this approach accurately reflect the true incidence of Delta infections in England? Explain how it is different from the incidence.**
 
-The number of PCR positive tests sent to the Wellcome Sanger Institute is a sample of all Delta cases in the UK, and is therefore not the true incidence. Not all sequences were sent to the Sanger Institute, the datasets analysed so far contain pillar 2 sampling. Many cases were also sampled by pillar 1 sampling, occuring in local universities or NHS trusts [@nicholls2021climb]. This introduces a geographical bias, with different regions likely sending in a different proportion of positive PCR tests to the Sanger Institute. 
+The number of PCR positive tests sent to the Wellcome Sanger Institute is a sample of all Delta cases in the UK, and is therefore not the true incidence. Not all sequences were sent to the Sanger Institute, the datasets analysed so far contain pillar 2 sampling. Many cases were also sampled by pillar 1 sampling, occuring in local universities or NHS trusts [@nicholls2021climb]. This introduces a geographical bias, with different regions likely sending in a different proportion of positive PCR tests to the Sanger Institute.
 
-Futhermore, this data only reflects the people who came forward to undergo PCR testing. This will bias the sampling if some communitites were less likely to undergo testing than others, for example not being able to afford the time off work. It also excludes asymptomatic cases, which are unlikley to have been picked up by PCR testing and sent into Sanger. Asymptomatic infections could make up as much as 40% of cases [@jamanetworkopen2021]. If the proportion of asymptomatic infections varied between SARS-CoV-2 variants, only looking at symptomatic cases could affect the conclusions made about growth rates. Therefore, whilst the Sanger Institute sequenced a large quantity of positive PCR tests, their sampling means they may not accurately reflect the true incidence of Delta infections in England. 
+Futhermore, this data only reflects the people who came forward to undergo PCR testing. This will bias the sampling if some communitites were less likely to undergo testing than others, for example not being able to afford the time off work. It also excludes asymptomatic cases, which are unlikley to have been picked up by PCR testing and sent into Sanger. Asymptomatic infections could make up as much as 40% of cases [@jamanetworkopen2021]. If the proportion of asymptomatic infections varied between SARS-CoV-2 variants, only looking at symptomatic cases could affect the conclusions made about growth rates. Therefore, whilst the Sanger Institute sequenced a large quantity of positive PCR tests, their sampling means they may not accurately reflect the true incidence of Delta infections in England.
 
 **To obtain a more representative estimate of the true number of Delta infections, multiply the proportion of Delta sequences in England (from the Sanger dataset) by the daily (7-day averaged) COVID-19 case counts in England provided in the daily-new-confirmed-covid-19-cases.csv dataset on Canvas.**
 
@@ -636,7 +635,7 @@ Futhermore, this data only reflects the people who came forward to undergo PCR t
 
 **Plot estimated daily cases of Delta and weekly number of Delta sequences from Sanger. Reflect on why the two counts are different from each other.**
 
-```{r calculateAndPlotIncidence, message = FALSE, warning = FALSE, fig.align='center', fig.width = 7, fig.height = 5}
+```{r calculateAndPlotIncidence, message = FALSE, warning = FALSE, fig.align='center', fig.width = 7, fig.height = 5, fig.cap = "The estimated daily counts and Sanger Institude sequencing counts of Delta incidence over time"}
 library(tidyverse)
 
 # Loading in the data
@@ -678,8 +677,8 @@ ggplot(dailyIncidence, aes(x = weeklyDate)) +
   scale_color_manual( # Adds the legend 
     name = "Legend", 
     values = c(
-      "Sanger Sequences" = "blue",
-      "Estimated Daily Cases" = "red")) +
+      "Sanger Sequences" =  "#6699CC",
+      "Estimated Daily Cases" =  "#661100")) +
   labs( # Labels the axes and title
     title = "Lineage Count and Delta Incidence Over Time",
     x = "Date",
@@ -690,10 +689,10 @@ ggplot(dailyIncidence, aes(x = weeklyDate)) +
 
 
 ```
+
 The two counts, although showing a similar pattern of a rise and fall in cases between April 2021 and March 2022, vary from each other. On the whole, the Sanger counts are fewer, apart from very early on in the outbreak of Delta. One reason for this could be that the Sanger data used in this assessment only includes sequences from the lighthouse labs. Other locations, such as local universities and NHS trusts were also used to sequence data tests, which was included in the estimated daily cases data, increasing the count.
 
 The estimated daily case counts include additional peaks in August 2021 and November 2021 which aren't seen in the Sanger sequences. The additional sequences included in the daily case estimates across the UK means if there was variation in the number of Delta cases per region, or a local peak in the number of cases, this would be represented better in the daily estimate data.
-
 
 #### 5.2
 
@@ -703,7 +702,7 @@ The estimated daily case counts include additional peaks in August 2021 and Nove
 
 **Reflect on whether the two estimates differ significantly. Which estimate do you consider more reliable, and why? (hint: consider factors such as the sampling strategy used by the different datasets and the representativeness of the sequencing data for actual infections.)**
 
-```{r Rt, fig.height = 5, message = FALSE, warning = FALSE, fig.width = 10, fig.align='center'}
+```{r Rt, fig.height = 5, message = FALSE, warning = FALSE, fig.width = 10, fig.align='center', fig.cap = "The Rt estimates for the Delta variant, based on the ONS-CIS and COG-UK datasets"}
 
 ### Calculating Rt for the Sanger data
 
@@ -789,8 +788,13 @@ rtONSPlot <- plot(rt_results_ONS, what = "R", legend = FALSE) +
 # Display both plots 
 grid.arrange(rtONSPlot, rtSangerPlot, ncol=2, nrow =1)
 ```
+
 In making these plots, the serial interval parameters used were previously estimated for Delta [@Backer2022].
 
+*R~t~* is the reproduction number at time *t*, unlike *R~0~* it represents a population of both naive and immune individuals, instead of fully naive individuals at the beginning of an epidemic [@estimates2020]. Calculating *R~t~* accurately is vital to give information on the impact of control measures, and how an epidemic is likely to look going forwards. 
 
+One advantage of the ONS-CIS data is that it is more randomly selected than the COG-UK data, which only contains sequences from positive PCR tests. However, the sampling is not completely random, coming from a list of people who have participated in previous ONS studies. Furthermore, the sample size is more consistent for the ONS-CIS dataset, whilst the COG-UK dataset varies in size depending on the current count and current testing facility capacities.
 
-### References
+Both datasets give very similar estimates for *R~t~*  over time. They both reflect similar trends, including a *R~t~* < around August. The uncertainty is a lot smaller for the COG-UK dataset. This could be because a larger number of positive cases are being sampled, unlike the ONS-CIS data, which samples many people who do not currently have SARS-CoV-2. For this reason, the quantity of data, despite not being randomly selected, makes me consider the COG-UK estimate more reliable. 
+
+\### References
