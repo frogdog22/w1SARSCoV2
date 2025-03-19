@@ -446,7 +446,9 @@ This dataset consists of over 229,000 rows. Each one has a collection date, whic
 #### 4.2
 **Analyse and visualise the data: (i) plot Delta frequencies by region; for each region, plot the frequency of Delta over time. Use distinct colours or facets to differentiate between regions. (ii) Fit logistic growth for each region; for each region, fit a logistic growth model to the frequency data. Overlay the logistic growth curves onto the frequency trajectories for each region.**
 
-```{r calculatingCountData}
+The code for calculating the counts and sorting the data into 7 day bins has been excluded from the html file as the same methods are used as in Q1. The full code can be seen on the rmd file.
+
+```{r calculatingCountData, echo = FALSE, message = FALSE}
 # Create new data frame 
 deltaSummary <- aggregate(
   deltaDataClean$delta,
@@ -473,12 +475,9 @@ deltaSummary <- merge(deltaSummary, total_delta_counts, by = c("collection_date"
 
 # Calculate frequencies
 deltaSummary$lineage_frequency <- deltaSummary$lineage_count / deltaSummary$total_count
-
-# Display the first few rows of the new data frame
-head(deltaSummary)
 ```
 
-```{r binnedData}
+```{r binnedData, echo = FALSE, message = FALSE}
 
 # Aggregate lineage frequencies into 7-day bins
 # Converts the Date values into numeric format, where each date is represented as the number of days since 1970-01-01 (the Unix epoch)
@@ -507,16 +506,14 @@ deltaSummaryBinned <- merge(deltaSummaryBinned, totalDeltaBinCounts, by = c("col
 # Recalculate frequencies
 deltaSummaryBinned$lineage_frequency <- deltaSummaryBinned$lineage_count / deltaSummaryBinned$total_count
 
-# Preview the binned data
-head(deltaSummaryBinned)
 ```
 
-```{r logisticModel}
+```{r logisticModel, fig.align = "center"}
 # Subsetting the data for Delta positive tests
 deltaPositive <- subset(deltaSummaryBinned, delta == TRUE)
 
 # List of unique regions
-regions <- unique(deltaPositive$region)
+regions <- c("East Midlands", "East of England", "London", "North East", "North West", "South East", "South West", "West Midlands", "Yorkshire and Humber")
 
 # Empty list to store model parameters for Q4.3
 region_parameters <- data.frame(region = character(), f0 = numeric(), s = numeric(), stringsAsFactors = FALSE)
@@ -524,12 +521,11 @@ region_parameters <- data.frame(region = character(), f0 = numeric(), s = numeri
 # Empty list to store logistic fit results for each region
 all_smooth_predictions <- list()
 
-# Loop over each region
+# Loop for each region
 for (r in regions) {
   
-  # Subset data for the current region and the selected date range
-  variant_growth_phase <- subset(deltaPositive, 
-                                 region == r)
+  # Subset data for the current region
+  variant_growth_phase <- subset(deltaPositive, region == r)
 
   # Fit the logistic model using nls
   nls_fit <- nls(
@@ -538,66 +534,66 @@ for (r in regions) {
     start = list(s = 0.1, f0 = min(variant_growth_phase$lineage_frequency))
   )
   
-   # Extract parameters
+   # Extract parameters 
   growth_rate <- coef(nls_fit)["s"]
   initial_frequency <- coef(nls_fit)["f0"]
   
-  # Store the parameters in the dataframe
+  # Store the parameters in the dataframe for Q4.3
   region_parameters <- rbind(region_parameters, 
                              data.frame(region = r, 
                                         f0 = initial_frequency,
                                         s = growth_rate))
   
   # Generate a smooth sequence of dates for plotting the logistic curve
-smooth_dates <- seq(min(variant_growth_phase$collection_date_bin),
-                    max(variant_growth_phase$collection_date_bin), by = "1 day")
+  smooth_dates <- seq(min(variant_growth_phase$collection_date_bin),
+                      max(variant_growth_phase$collection_date_bin), by = "1 day")
   
   
   # Calculate predicted frequencies for smooth (continuous) dates 
   smooth_predictions <- data.frame(
     collection_date_bin = smooth_dates,
-    predicted_frequency = logistic_growth(as.numeric(smooth_dates - min(variant_growth_phase$collection_date_bin)),
-                                          coef(nls_fit)["s"], coef(nls_fit)["f0"]),
-    region = r
-  )
+    predicted_frequency = logistic_growth(
+      as.numeric(smooth_dates - min(variant_growth_phase$collection_date_bin)),
+      coef(nls_fit)["s"], coef(nls_fit)["f0"]),
+      region = r
+    )
   
  
-  # Store predictions for this region
+  # Store model predictions for the current region
   all_smooth_predictions[[r]] <- smooth_predictions
-  
-  
 }
 
-# Combine all regional predictions into one data frame
+# Combine all of the region predictions into one data frame
 all_smooth_predictions <- do.call(rbind, all_smooth_predictions)
 
 # Plot data
 ggplot(deltaPositive, aes(x = collection_date_bin, y = lineage_frequency)) +
-  geom_line(data = all_smooth_predictions, aes(y = predicted_frequency, color = "Logistic Model"), size = 1) +
-  geom_line(aes(color = "Frequencies")) +
-  facet_wrap(~region) +
-    scale_color_manual(name = "Legend", 
-                       values = c("Frequencies" = "black", "Logistic Model" = "red")) +
-  labs(title = "Delta Frequencies and  by Region", 
+  geom_line(data = all_smooth_predictions, # Adds a line for the logistic growth model 
+            aes(y = predicted_frequency, 
+                color = "Logistic Model"), size = 1, alpha = 0.5) + 
+  geom_line(aes(color = "Frequencies")) + # Adds a line for the frequencies 
+  facet_wrap(~region) + # Splits the graph into facets by region
+  scale_color_manual(name = "Legend", # Sets up the colours for the legend 
+                     values = c("Frequencies" = "black", "Logistic Model" = "red")) +
+  labs(title = "Delta Frequencies and  by Region", # Labels the title and axes
        x = "Collection date", 
        y = "Frequency") +
   theme_minimal()
-
-
-#i have messed this up somewhere trying to add in a part where it extracts s and f0
 ```
+These plots show the frequencies of Delta in each region, shown in black, as well as the logistic growth curves, overlaid in red. As the start and end dates of when Delta first emerged and when it reached fixation were very similar for each region, the same dates were used for all. These plots show that for the most part, the logistic growth model fits the frequency data. In some regions, it appears to be a less good fit, for example in the South West and North East, where growth was not fully logarithmic. Therefore, the results and parameters from the model should be treated with caution for these regions.
+
 
 #### 4.3
 **Interpretation: (i) Identify the region with the fastest Delta outbreak; based on your analysis, determine which region had the most rapidly growing outbreak of Delta (highest 𝑠). Identify the region where Delta had the earliest rise in frequencies (highest 𝑓0). Discuss why the timing of Delta’s emergence differed between regions. (ii) Could Delta’s growth across regions be associated with a founder effect? Explain what a founder effect is and evaluate whether the observed data supports or refutes this hypothesis.**
 
-```{r}
+```{r parameterPlots, fig.width = 11, fig.height = 5, fig.align='center'}
 
 # Plotting s per region
 sPlot <- ggplot(region_parameters, aes(x = region, y = s, fill = region)) + 
   geom_col() +
   scale_fill_manual(values = palette) +  # Apply the custom palette
     labs(
-      title = "Growth rate(s) per region",
+      title = "Growth rate (s) per region",
       x = "Region",
       y = "s") +
   theme_minimal() +
@@ -609,7 +605,7 @@ f0Plot <- ggplot(region_parameters, aes(x = region, y = f0, fill = region)) +
   geom_col() +
   scale_fill_manual(values = palette) +  # Apply the custom palette
     labs(
-      title = "Growth rate(s) per region",
+      title = "f0 per region",
       x = "Region",
       y = "f0") +
   theme_minimal() +
@@ -621,8 +617,9 @@ grid.arrange(sPlot, f0Plot, ncol=2, nrow =1)
 
 ```
 
+s is the selection coefficient, the odds of a variant appearing in a random sample in a large population over time will increase at a rate of s per generation. This can be used to represent the growth rate of a variant. From these data, s is greatest in the West Midlands, at 0.155. Meanwhile, regions with the highest f0 have the earliest rise in frequencies. From these data, this occurs in the South West, where f0 is 0.040. Whilst these data are useful in understanding the dynamics of the Delta variant, a logistic growth model may not be right for this data. It assumes a constant population size and fixed generation time, which may vary based on public health measures such as lockdowns and social distancing, alongside a constant selective advantage, which also cannot be assumed due to immunity building in the host population. Despite this, logistic growth models are robust to changes in the rate of reporting and any sampling lags [@volz2023fitness], which is important to consider especially early in the pandemic when recording systems were still being set up, but it doesn't give all of the information needed to determine if a variant is a public health threat. Other models, such as Bayesian heirarhcial models or generalised multinomal logistic regression models may be appropriate instead. 
 
-
+Founder effects are the reduction in genetic diversity due to the colonisation of a region by a small, subset of a few viral variants from a larger population [@volz2023fitness]. This can often mask the effects of natural selection when looking at a logistic growth model. The extent to which a founder effect occurs depends on the size of the founder population that infects a new region, and the rate of exponential growth in that new region. As the delta variant was introduced to England over 1000 times [@mccrone2022context], the founder effect is likely reduced, although the impact this has on regions depends on if these introductions were evenly spread throughout England, or were concentrated in one area. The large range in f0 between regions could imply a founder effect. To fully ascertain this, more data on the genetic sequences and their similarity of the delta variant in different regions would be needed. 
 ### Question 5
 
 #### 5.1
