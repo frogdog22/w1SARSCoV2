@@ -94,7 +94,7 @@ COGcleanHead %>%
 
 
 
-```{r stackedPlots, fig.height = 6, fig.width = 14, fig.align = "center"}
+```{r stackedPlots, fig.height = 6, fig.width = 14, fig.align = "center", fig.cap = "Counts and frequencies of the major SARS-CoV-2 lineages over time"}
 
 # Set a colour blind friendly colour palette
 palette <- c4a("safe",10)
@@ -626,7 +626,9 @@ Founder effects are the reduction in genetic diversity due to the colonisation o
 
 **Estimate the true incidence of Delta: Up to this point, we have relied on the number of PCR-positive tests sent to the Sanger Institute for sequencing to estimate the growth rate of variants. However, does this approach accurately reflect the true incidence of Delta infections in England? Explain how it is different from the incidence.**
 
-yay lots of brain thoughts !
+The number of PCR positive tests sent to the Wellcome Sanger Institute is a sample of all Delta cases in the UK, and is therefore not the true incidence. Not all sequences were sent to the Sanger Institute, the datasets analysed so far contain pillar 2 sampling. Many cases were also sampled by pillar 1 sampling, occuring in local universities or NHS trusts [@nicholls2021climb]. This introduces a geographical bias, with different regions likely sending in a different proportion of positive PCR tests to the Sanger Institute. 
+
+Futhermore, this data only reflects the people who came forward to undergo PCR testing. This will bias the sampling if some communitites were less likely to undergo testing than others, for example not being able to afford the time off work. It also excludes asymptomatic cases, which are unlikley to have been picked up by PCR testing and sent into Sanger. Asymptomatic infections could make up as much as 40% of cases [@jamanetworkopen2021]. If the proportion of asymptomatic infections varied between SARS-CoV-2 variants, only looking at symptomatic cases could affect the conclusions made about growth rates. Therefore, whilst the Sanger Institute sequenced a large quantity of positive PCR tests, their sampling means they may not accurately reflect the true incidence of Delta infections in England. 
 
 **To obtain a more representative estimate of the true number of Delta infections, multiply the proportion of Delta sequences in England (from the Sanger dataset) by the daily (7-day averaged) COVID-19 case counts in England provided in the daily-new-confirmed-covid-19-cases.csv dataset on Canvas.**
 
@@ -634,7 +636,7 @@ yay lots of brain thoughts !
 
 **Plot estimated daily cases of Delta and weekly number of Delta sequences from Sanger. Reflect on why the two counts are different from each other.**
 
-```{r calculateAndPlotIncidence}
+```{r calculateAndPlotIncidence, message = FALSE, warning = FALSE, fig.align='center', fig.width = 7, fig.height = 5}
 library(tidyverse)
 
 # Loading in the data
@@ -684,10 +686,14 @@ ggplot(dailyIncidence, aes(x = weeklyDate)) +
     y = "Count"
   ) +
   theme_minimal() +
-  theme(legend.position = c(0.1, 0.9), # Adjusts the position of the legend 
-        legend.justification = c(0.2, 0.7))
+  theme(legend.background = element_rect(fill = "white", color = "black")) # Adds background to the legend)
+
 
 ```
+The two counts, although showing a similar pattern of a rise and fall in cases between April 2021 and March 2022, vary from each other. On the whole, the Sanger counts are fewer, apart from very early on in the outbreak of Delta. One reason for this could be that the Sanger data used in this assessment only includes sequences from the lighthouse labs. Other locations, such as local universities and NHS trusts were also used to sequence data tests, which was included in the estimated daily cases data, increasing the count.
+
+The estimated daily case counts include additional peaks in August 2021 and November 2021 which aren't seen in the Sanger sequences. The additional sequences included in the daily case estimates across the UK means if there was variation in the number of Delta cases per region, or a local peak in the number of cases, this would be represented better in the daily estimate data.
+
 
 #### 5.2
 
@@ -697,7 +703,7 @@ ggplot(dailyIncidence, aes(x = weeklyDate)) +
 
 **Reflect on whether the two estimates differ significantly. Which estimate do you consider more reliable, and why? (hint: consider factors such as the sampling strategy used by the different datasets and the representativeness of the sequencing data for actual infections.)**
 
-```{r Rt}
+```{r Rt, fig.height = 5, message = FALSE, warning = FALSE, fig.width = 10, fig.align='center'}
 
 ### Calculating Rt for the Sanger data
 
@@ -783,6 +789,8 @@ rtONSPlot <- plot(rt_results_ONS, what = "R", legend = FALSE) +
 # Display both plots 
 grid.arrange(rtONSPlot, rtSangerPlot, ncol=2, nrow =1)
 ```
+In making these plots, the serial interval parameters used were previously estimated for Delta [@Backer2022].
+
 
 
 ### References
